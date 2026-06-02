@@ -1,0 +1,98 @@
+[project]
+name = "learnify-edu"
+version = "1.0.0"
+description = "FastAPI Base Application"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi",
+    "uvicorn>=0.27.0",
+    "sqlalchemy>=2.0.0",
+    "psycopg2-binary>=2.9.9",
+    "alembic>=1.13.0",
+    "redis>=5.0.0",
+    "pydantic>=2.6.1,<3.0.0",
+    "pydantic-settings>=2.1.0",
+    "email-validator>=2.1.0",
+    "pyjwt[crypto]>=2.8.0",
+    "bcrypt==3.2.2",
+    "passlib[bcrypt]==1.7.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.2.0",
+    "black>=24.1.0",
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "pytest-watch>=4.2.0",
+    "pytest-mock>=3.12.0",
+    "httpx>=0.26.0",
+]
+
+# ==============================================================================
+# LINTING & FORMATTING (Ruff & Black)
+# ==============================================================================
+[tool.black]
+line-length = 88
+no-cache = true
+target-version = ['py312']
+include = '\.pyi?$'
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+
+lint.select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes (core logic/bug detection)
+    "I",   # isort (clean, unified import sorting)
+    "B",   # flake8-bugbear (common design issues/gotchas)
+    "C4",  # flake8-comprehensions (better list/dict comprehensions)
+    "UP",  # pyupgrade (forces modern Python 3.11+ syntax patterns)
+    "ASYNC", # flake8-async (catches common asynchronous design pitfalls)
+]
+lint.ignore = []
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "lf"
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ["app"]
+
+[tool.ruff.lint.flake8-bugbear]
+# Allow FastAPI's Depends syntax in function arguments
+extend-immutable-calls = ["fastapi.Depends", "Depends"]
+
+# ==============================================================================
+# TESTING (Pytest & Coverage)
+# ==============================================================================
+[tool.pytest.ini_options]
+addopts = "-v --cov=app --cov-report=term-missing -p no:cacheprovider"
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+pythonpath = "."
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "e2e: End-to-end tests",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+    "ignore:.*Using `httpx` with `starlette.testclient` is deprecated.*",
+]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["*/__init__.py", "app/core/config.py"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80
