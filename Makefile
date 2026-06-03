@@ -71,22 +71,29 @@ fullstack-down:
 # Docker Operations
 # ==============================================================================
 
-docker-build:
-	docker-compose build --parallel --no-cache
+docker-clean-all:
+# 1. Try standard compose down first
+	-docker compose down -v --remove-orphans
 
-docker-up:
-	docker-compose up -d
+	# 2. Force-remove any remaining containers matching "learnifyedu"
+	@echo "Force clearing any remaining learnifyedu containers..."
+	@containers=$$(docker ps -a --filter "name=learnifyedu" -q); \
+	if [ ! -z "$$containers" ]; then \
+		docker rm -f $$containers; \
+	fi
 
-docker-down:
-	docker-compose down --remove-orphans
+	# 3. Clear out any leftover networks matching "learnifyedu"
+	@echo "Removing learnifyedu networks..."
+	@networks=$$(docker network ls --filter "name=learnifyedu" -q); \
+	if [ ! -z "$$networks" ]; then \
+		docker network rm $$networks 2>/dev/null || true; \
+	fi
 
-docker-down-v:
-	docker-compose down -v --remove-orphans
-
-docker-restart:
-	$(MAKE) docker-down
-	$(MAKE) docker-up
-
-clean-all:
-	docker compose down -v --remove-orphans
-	docker system prune -a --volumes --force
+	# 4. Safely remove images belonging to the project
+	@echo "Cleaning up learnifyedu images..."
+	@images=$$(docker images --filter "reference=learnifyedu*" -q); \
+	if [ ! -z "$$images" ]; then \
+		docker rmi -f $$images; \
+	else \
+		echo "No learnifyedu images found."; \
+	fi
