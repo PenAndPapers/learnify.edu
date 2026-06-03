@@ -1,6 +1,13 @@
-.PHONY: install update-deps _compile-deps docker-up docker-down docker-down-v docker-restart docker-build docker-logs docker-ps test test-unit test-integration test-e2e format lint migration migrate migrate-down migrate-logs migrate-check
+# ==============================================================================
+# Workspace Management Core Configurations
+# ==============================================================================
+.PHONY: install update-deps _compile-deps _initialize-migration \
+        docker-build docker-up docker-down docker-down-v docker-restart \
+        test test-unit test-integration test-e2e format lint \
+        migration migrate migrate-down migrate-logs migrate-check
 
-PROJECT_NAME := learnify_edu
+PROJECT_NAME := fastapi
+BACKEND_SERVICES := gateway api database cache
 
 # ==============================================================================
 # Dependency Management Helpers (Private Targets)
@@ -19,118 +26,110 @@ _compile-deps:
 	@cat requirements.txt >> temp_req.txt
 	@mv temp_req.txt requirements.txt
 
-# ==============================================================================
-# Development Setup (Local Machine)
-# ==============================================================================
-
-install:
-	# 1. Ensure the migrations directory exists immediately
-	mkdir -p app/database/migrations
-
-	# 2. Setup the python virtual environment
-	pip install uv
-	
-	# 3. Compile and build lockfile using our helper target
-	$(MAKE) _compile-deps
-
-	# 4. Sync/Install dependencies into the local .venv
-	uv pip install --no-cache -r requirements.txt
-
-	# 5. Automatically initialize Alembic if env.py is missing
-	@if [ ! -f "app/database/migrations/env.py" ]; then \
+# Internal helper to generate Alembic migrations framework if missing
+_initialize-migration:
+	@if [ ! -f "app/migrations/env.py" ]; then \
 		echo "Alembic configuration not found. Initializing boilerplate..."; \
-		.venv/bin/alembic init app/database/migrations; \
+		uv run alembic init app/migrations; \
 	else \
 		echo "Alembic migrations directory already initialized."; \
 	fi
 
+# ==============================================================================
+# Development Setup & Installation (Local Machine Workspace)
+# ==============================================================================
+
+install:
+	# 1. Ensure the standardized application package migrations folder exists
+	mkdir -p app/migrations
+
+	# 2. Compile dependencies and build the locked requirements file
+	$(MAKE) _compile-deps
+
+	# 3. Sync and install project packages into the local virtual environment cleanly
+	uv pip install --no-cache -r requirements.txt
+
+	# 4. Automatically bootstrap Alembic workspace directories if empty
+	$(MAKE) _initialize-migration
+
 update-deps:
-	# 1. Re-compile the lockfile using our helper target
+	# 1. Re-compile dependencies cleanly from pyproject.toml changes
 	$(MAKE) _compile-deps
 	
-	# 2. Sync changes locally and rebuild containers
+	# 2. Sync local package definitions and rebuild corresponding containers
 	uv pip install --no-cache -r requirements.txt
 	$(MAKE) docker-build
-	@echo "Dependencies updated successfully"
+	@echo "Local dependencies and backend container baselines updated successfully."
 
 # ==============================================================================
-# Docker Operations
+# Docker Operations (Scoped Exclusively to the Backend Domain Profile)
 # ==============================================================================
 
 docker-build:
-	docker-compose build --parallel --no-cache
+	docker compose build --no-cache $(BACKEND_SERVICES)
 
 docker-up:
-	docker-compose up -d
+	# Activates the "backend" profile to make sure the gateway proxy attaches smoothly
+	docker compose --profile backend up -d $(BACKEND_SERVICES)
 
 docker-down:
-	docker-compose down --remove-orphans
+	docker compose stop $(BACKEND_SERVICES)
+	docker compose rm -f $(BACKEND_SERVICES)
 
 docker-down-v:
-	docker-compose down -v --remove-orphans
+	docker compose stop $(BACKEND_SERVICES)
+	docker compose rm -f -v $(BACKEND_SERVICES)
 
 docker-restart:
 	$(MAKE) docker-down
 	$(MAKE) docker-up
 
-docker-logs:
-	docker-compose logs -f
-
-docker-ps:
-	docker-compose ps
-
-docker-clean:
-	docker-compose down -v --remove-orphans
-	docker image rm $$(docker images 'learnifyedu-*' -q) 2>/dev/null || true
-	docker builder prune -f
-	@echo "Docker containers, project images, volumes, and build caches cleared."
-
 # ==============================================================================
-# Testing (Configuration is driven completely by pyproject.toml)
+# Testing Suites (Executed safely within the Container API Environment)
 # ==============================================================================
 
 test:
-	docker-compose exec api pytest
+	docker compose exec api pytest
 
 test-unit:
-	docker-compose exec api pytest tests/unit
+	docker compose exec api pytest tests/unit
 
 test-integration:
-	docker-compose exec api pytest tests/integration
+	docker compose exec api pytest tests/integration
 
 test-e2e:
-	docker-compose exec api pytest tests/e2e
+	docker compose exec api pytest tests/e2e
 
 # ==============================================================================
-# Code Quality (Ruff completely replaces Black)
+# Code Quality, Formatting, and Linting (Ruff Core Engine Integration)
 # ==============================================================================
 
 format:
-	docker-compose exec -T api ruff check --fix app tests docker --exclude .venv
-	docker-compose exec -T api ruff format app tests docker --exclude .venv
+	docker compose exec -T api ruff check --fix app tests --exclude .venv
+	docker compose exec -T api ruff format app tests --exclude .venv
 	
 lint:
-	docker-compose exec api ruff check app tests docker --exclude .venv
+	docker compose exec api ruff check app tests --exclude .venv
 
 # ==============================================================================
-# Database Migrations (Alembic)
+# Database Migrations Schema Operations (Alembic Context Engines)
 # ==============================================================================
 
 migration:
-	@read -p "Enter migration name: " name; \
-	docker-compose exec api alembic revision --autogenerate -m "$$name"
+	@read -p "Enter migration descriptive name: " name; \
+	docker compose exec api alembic revision --autogenerate -m "$$name"
 
 migrate:
-	docker-compose exec api alembic upgrade head
+	docker compose exec api alembic upgrade head
 
 migrate-down:
-	docker-compose exec api alembic downgrade -1
+	docker compose exec api alembic downgrade -1
 
 migrate-logs:
-	docker-compose exec api alembic history --verbose
+	docker compose exec api alembic history --verbose
 
 migrate-check:
-	docker-compose exec api alembic current
+	docker compose exec api alembic current
 	@echo ""
-	@echo "Pending migrations (Heads):"
-	docker-compose exec api alembic heads
+	@echo "--- Pending Relational Schema Migrations (Heads) ---"
+	docker compose exec api alembic heads

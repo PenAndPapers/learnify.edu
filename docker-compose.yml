@@ -1,6 +1,8 @@
 name: "learnify.edu"
+
 services:
   gateway:
+    profiles: ["frontend", "fullstack"]
     build:
       context: .
       dockerfile: infra/nginx/Dockerfile
@@ -15,15 +17,16 @@ services:
 
   api:
     build:
-      context: .
-      dockerfile: backend/fastapi/Dockerfile
+      context: ./backend/fastapi            # Narrows the build universe to just FastAPI workspace root
+      dockerfile: Dockerfile                # Relative to the new context above
     command: >
       sh -c "alembic upgrade head &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     volumes:
-      - .:/app
-    expose: # Used 'ports' with 'expose' so it's isolated within the internal Docker network
-      - "8000"
+      - ./backend/fastapi/app:/app/app      # Syncs only Python application files to avoid path mirroring loops
+      - ./.env:/app/.env:ro                 # Mounts global .env file as read-only for Alembic/FastAPI access
+    expose: 
+      - "8000"                              # Isolated within the internal Docker network
     depends_on:
       database:
         condition: service_healthy
