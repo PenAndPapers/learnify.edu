@@ -1,0 +1,26 @@
+Metadata-Version: 2.4
+Name: learnify-edu
+Version: 1.0.0
+Summary: FastAPI Base Application
+Requires-Python: <3.13,>=3.12
+Requires-Dist: fastapi
+Requires-Dist: uvicorn>=0.27.0
+Requires-Dist: sqlalchemy>=2.0.0
+Requires-Dist: psycopg2-binary>=2.9.9
+Requires-Dist: alembic>=1.13.0
+Requires-Dist: redis>=5.0.0
+Requires-Dist: pydantic<3.0.0,>=2.6.1
+Requires-Dist: pydantic-settings>=2.1.0
+Requires-Dist: email-validator>=2.1.0
+Requires-Dist: pyjwt[crypto]>=2.8.0
+Requires-Dist: bcrypt==3.2.2
+Requires-Dist: passlib[bcrypt]==1.7.4
+Requires-Dist: aiosmtplib>=3.0.0
+Provides-Extra: dev
+Requires-Dist: ruff>=0.2.0; extra == "dev"
+Requires-Dist: black>=24.1.0; extra == "dev"
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+Requires-Dist: pytest-cov>=4.1.0; extra == "dev"
+Requires-Dist: pytest-watch>=4.2.0; extra == "dev"
+Requires-Dist: pytest-mock>=3.12.0; extra == "dev"
+Requires-Dist: httpx>=0.26.0; extra == "dev"

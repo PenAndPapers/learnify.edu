@@ -81,6 +81,24 @@ services:
       retries: 3
       start_period: 5s
 
+  mailpit:
+    build:
+      context: ./infra/mailpit
+      dockerfile: Dockerfile
+    ports:
+      - "9080:8025"
+    expose:
+      - "1025"
+    environment:
+      - MP_MAX_MESSAGES=500
+      # CRITICAL: Tell Mailpit to write its database inside our persistent volume path
+      - MP_DATABASE=/data/mailpit.db
+    volumes:
+      # Mount the named volume to the container's internal /data directory
+      - mailpit_data:/data
+    restart: unless-stopped
+
 volumes:
   database_data:
   cache_data:
+  mailpit_data:

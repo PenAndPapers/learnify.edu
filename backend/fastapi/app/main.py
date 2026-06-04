@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core import env_config, get_cache_config
 from app.database import get_db
 from app.modules.authentication.route import router as authentication_router
+from app.utils.email.email import send_welcome_email
 
 cache_config = get_cache_config()
 
@@ -99,3 +100,8 @@ def check_environment_configs() -> dict[str, Any]:
         'cache_host': env_config.redis_host,
         'cache_port': env_config.redis_port,
     }
+
+
+@app.get('/check-send-email')
+async def check_send_email() -> None:
+    await send_welcome_email('testuser@email.com', 'Test email subject')

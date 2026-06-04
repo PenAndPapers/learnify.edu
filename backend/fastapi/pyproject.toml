@@ -16,6 +16,7 @@ dependencies = [
     "pyjwt[crypto]>=2.8.0",
     "bcrypt==3.2.2",
     "passlib[bcrypt]==1.7.4",
+    "aiosmtplib>=3.0.0",
 ]
 
 [project.optional-dependencies]
@@ -33,14 +34,15 @@ dev = [
 # LINTING & FORMATTING (Ruff & Black)
 # ==============================================================================
 [tool.black]
-line-length = 88
+line-length = 100
 no-cache = true
 target-version = ['py312']
 include = '\.pyi?$'
 
 [tool.ruff]
 target-version = "py312"
-line-length = 88
+line-length = 100
+indent-width = 2
 
 lint.select = [
     "E",   # pycodestyle errors

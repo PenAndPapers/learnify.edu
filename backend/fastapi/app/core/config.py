@@ -28,6 +28,16 @@ class CacheConfig(BaseModel):
     port: str
 
 
+class SMTPConfig(BaseModel):
+    host: str
+    port: int
+    user: str
+    password: str
+    use_tls: bool
+    from_email: str
+    from_name: str
+
+
 class EnvConfig(BaseSettings):
     app_name: str = 'Learnify.edu'
     app_version: str = '1.0.0'
@@ -48,6 +58,15 @@ class EnvConfig(BaseSettings):
 
     redis_host: str = 'cache'
     redis_port: str = '6379'
+
+    smtp_host: str = 'mailpit'
+    smtp_port: int = 1025
+    smtp_user: str = ''
+    smtp_password: str = ''
+    smtp_use_tls: bool = False
+
+    emails_from_email: str = 'noreply@learnify.edu'
+    emails_from_name: str = 'LearnifyEdu'
 
     model_config = SettingsConfigDict(
         env_file='.env', env_file_encoding='utf-8', extra='ignore'
@@ -93,3 +112,15 @@ def get_database_url() -> str:
 
 def get_cache_config() -> CacheConfig:
     return CacheConfig(host=env_config.redis_host, port=env_config.redis_port)
+
+
+def get_smtp_config() -> SMTPConfig:
+    return SMTPConfig(
+        host=env_config.smtp_host,
+        port=env_config.smtp_port,
+        user=env_config.smtp_user,
+        password=env_config.smtp_password,
+        use_tls=env_config.smtp_use_tls,
+        from_email=env_config.emails_from_email,
+        from_name=env_config.emails_from_name
+    )

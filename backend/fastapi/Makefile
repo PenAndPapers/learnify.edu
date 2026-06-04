@@ -7,7 +7,7 @@
         migration migrate migrate-down migrate-logs migrate-check
 
 PROJECT_NAME := fastapi
-BACKEND_SERVICES := gateway api database cache
+BACKEND_SERVICES := gateway api database cache mailpit
 
 # ==============================================================================
 # Dependency Management Helpers (Private Targets)
