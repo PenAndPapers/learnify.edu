@@ -67,6 +67,11 @@ fullstack-down:
 	$(MAKE) backend-fastapi-down
 
 
+fullstack-lint:
+	$(MAKE) -C backend/fastapi format
+	$(MAKE) -C backend/fastapi lint
+
+
 # ==============================================================================
 # Docker Operations
 # ==============================================================================

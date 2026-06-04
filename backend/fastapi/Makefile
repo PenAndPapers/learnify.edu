@@ -105,11 +105,11 @@ test-e2e:
 # ==============================================================================
 
 format:
-	docker compose exec -T api ruff check --fix app tests --exclude .venv
-	docker compose exec -T api ruff format app tests --exclude .venv
+	docker compose exec -T api ruff check --fix --cache-dir /tmp/.ruff_cache app --exclude .venv
+	docker compose exec -T api ruff format --cache-dir /tmp/.ruff_cache app --exclude .venv
 	
 lint:
-	docker compose exec api ruff check app tests --exclude .venv
+	docker compose exec api ruff check --cache-dir /tmp/.ruff_cache app --exclude .venv
 
 # ==============================================================================
 # Database Migrations Schema Operations (Alembic Context Engines)

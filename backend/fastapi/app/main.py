@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
+from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from redis import asyncio as aioredis
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-from typing import Any
+
 from app.core import env_config, get_cache_config
 from app.database import get_db
 from app.modules.authentication.route import router as authentication_router
