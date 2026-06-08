@@ -22,7 +22,6 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "ruff>=0.2.0",
-    "black>=24.1.0",
     "pytest>=8.0.0",
     "pytest-cov>=4.1.0",
     "pytest-watch>=4.2.0",
@@ -31,33 +30,27 @@ dev = [
 ]
 
 # ==============================================================================
-# LINTING & FORMATTING (Ruff & Black)
+# LINTING & FORMATTING (Ruff Core Engine Integration)
 # ==============================================================================
-[tool.black]
-line-length = 100
-no-cache = true
-target-version = ['py312']
-include = '\.pyi?$'
-
 [tool.ruff]
 target-version = "py312"
-line-length = 100
 indent-width = 2
 
 lint.select = [
-    "E",   # pycodestyle errors
-    "W",   # pycodestyle warnings
-    "F",   # pyflakes (core logic/bug detection)
-    "I",   # isort (clean, unified import sorting)
-    "B",   # flake8-bugbear (common design issues/gotchas)
-    "C4",  # flake8-comprehensions (better list/dict comprehensions)
-    "UP",  # pyupgrade (forces modern Python 3.11+ syntax patterns)
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes (core logic/bug detection)
+    "I",    # isort (clean, unified import sorting)
+    "B",    # flake8-bugbear (common design issues/gotchas)
+    "C4",   # flake8-comprehensions (better list/dict comprehensions)
+    "UP",   # pyupgrade (forces modern Python syntax patterns)
     "ASYNC", # flake8-async (catches common asynchronous design pitfalls)
 ]
-lint.ignore = []
+lint.ignore = ["E501"]
+lint.extend-fixable = ["E302"]
 
 [tool.ruff.format]
-quote-style = "single"
+quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "lf"
@@ -67,8 +60,11 @@ combine-as-imports = true
 known-first-party = ["app"]
 
 [tool.ruff.lint.flake8-bugbear]
-# Allow FastAPI's Depends syntax in function arguments
-extend-immutable-calls = ["fastapi.Depends", "Depends"]
+# Allow FastAPI's Depends & Security syntax in function arguments
+extend-immutable-calls = ["fastapi.Depends", "Depends", "fastapi.Security", "Security"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/env.py" = ["F401"]
 
 # ==============================================================================
 # TESTING (Pytest & Coverage)

@@ -1,9 +1,19 @@
 {
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+  
+  "python.envFile": "${workspaceFolder}/backend/fastapi/.env",
   "python-envs.defaultEnvManager": "ms-python.python:venv",
   "python.defaultInterpreterPath": "${workspaceFolder}/backend/fastapi/.venv/bin/python",
   "python.analysis.extraPaths": [
     "${workspaceFolder}/backend/fastapi"
   ],
   "python.analysis.importFormat": "absolute",
-  "workspace.supportRootPath": true
+  "[python]": {
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true,
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true
+  }
 }

@@ -18,13 +18,13 @@ logger = logging.getLogger(__name__)
 
 
 def get_db():
-    db = SessionLocal()
-    try:
-        logger.debug('Database connection established')
-        yield db
-    except Exception as e:
-        logger.error(f'Database error occurred: {str(e)}')
-        raise
-    finally:
-        logger.debug('Database connection closed')
-        db.close()
+  db = SessionLocal()
+  try:
+    logger.debug("Database connection established")
+    yield db
+  except Exception as e:
+    logger.error(f"Database error occurred: {str(e)}")
+    raise
+  finally:
+    logger.debug("Database connection closed")
+    db.close()

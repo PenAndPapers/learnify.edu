@@ -1,84 +1,100 @@
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, String
+from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, String, false
+from sqlalchemy.orm import relationship
 
 from app.database.session import Base
 
+from .validation import (
+  EmployeeRoleEnum,
+  EnrolleeApplicationStatusEnum,
+  StudentAcademicStatusEnum,
+)
+
 
 class UserTable(Base):
-    """
-    The Single Source of Truth for Identity & Core Biography.
-    Every human in the system has a row here.
-    """
-    __tablename__ = "users"
+  """
+  The Single Source of Truth for Identity & Core Biography.
+  Every human in the system has a row here.
+  """
 
-    id = Column(Integer, primary_key=True, index=True)
-    uuid = Column(String, default=lambda: str(uuid4()), unique=True, nullable=False)
-    email = Column(String, unique=True, nullable=False)
-    password = Column(String, nullable=False)
-    phone_number = Column(String, nullable=True)
-    first_name = Column(String, nullable=False)
-    last_name = Column(String, nullable=False)
-    date_of_birth = Column(Date, nullable=True)
-    address = Column(String, nullable=True)
+  __tablename__ = "users"
 
-    # Polymorphism
-    user_type = Column(String, nullable=False)
+  id = Column(Integer, primary_key=True, index=True)
+  uuid = Column(String, default=lambda: str(uuid4()), unique=True, nullable=False)
+  email = Column(String, unique=True, nullable=False)
+  password = Column(String, nullable=False)
+  first_name = Column(String, nullable=False)
+  last_name = Column(String, nullable=False)
+  phone_number = Column(String, nullable=True)
+  gender = Column(String, nullable=True)
+  date_of_birth = Column(Date, nullable=True)
+  address = Column(String, nullable=True)
+  is_verified = Column(Boolean, server_default=false(), nullable=False)
 
-    __mapper_args__ = {
-        "polymorphic_on": user_type,
-        "polymorphic_identity": "user"
-    }
+  # Polymorphism
+  user_type = Column(String, nullable=False)
+
+  tokens = relationship(
+    "TokenTable", back_populates="user", cascade="all, delete-orphan"
+  )
+
+  __mapper_args__ = {"polymorphic_on": user_type, "polymorphic_identity": "user"}
 
 
 class EnrolleeTable(UserTable):
-    """Holds data strictly unique to the ADMISSIONS process."""
-    __tablename__ = "enrollees"
+  """Holds data strictly unique to the ADMISSIONS process."""
 
-    id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+  __tablename__ = "enrollees"
 
-    # Unique to admissions
-    application_status = Column(String, server_default="REGISTERED")  # e.g., EXAM_PENDING, PASSED
-    chosen_course = Column(String, nullable=True)
-    previous_school = Column(String, nullable=True)
+  id = Column(Integer, ForeignKey("users.id"), primary_key=True)
 
-    __mapper_args__ = {
-        "polymorphic_identity": "enrollee",
-    }
+  # Unique to admissions
+  application_status = Column(String, default=EnrolleeApplicationStatusEnum.REGISTERED)
+  chosen_course = Column(String, nullable=True)
+  previous_school = Column(String, nullable=True)
+
+  __mapper_args__ = {
+    "polymorphic_identity": "ENROLLEE",
+  }
 
 
 class StudentTable(UserTable):
-    """Holds data strictly unique to ACTIVE ACADEMIC tracking."""
-    __tablename__ = "students"
+  """Holds data strictly unique to ACTIVE ACADEMIC tracking."""
 
-    id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+  __tablename__ = "students"
 
-    # Unique to active students
-    student_number = Column(String, unique=True, nullable=False)
-    year_level = Column(Integer, default=1)
-    academic_status = Column(String, server_default="ACTIVE")  # e.g., ACTIVE, ON_LEAVE, GRADUATED
+  id = Column(Integer, ForeignKey("users.id"), primary_key=True)
 
-    __mapper_args__ = {
-        "polymorphic_identity": "student",
-    }
+  # Unique to active students
+  student_number = Column(String, unique=True, nullable=False)
+  year_level = Column(Integer, default=1)
+  academic_status = Column(
+    String, default=StudentAcademicStatusEnum.ACTIVE
+  )  # e.g., ACTIVE, ON_LEAVE, GRADUATED
+
+  __mapper_args__ = {
+    "polymorphic_identity": "STUDENT",
+  }
 
 
 class EmployeeTable(UserTable):
-    """Holds data strictly unique to FACULTY and ADMINISTRATIVE staff."""
-    __tablename__ = "employees"
+  """Holds data strictly unique to FACULTY and ADMINISTRATIVE staff."""
 
-    id = Column(Integer, ForeignKey("users.id"), primary_key=True)
+  __tablename__ = "employees"
 
-    # Unique to employees
-    employee_number = Column(String, unique=True, nullable=False)
-    department = Column(String, nullable=False)  # e.g., "Admissions", "IT", "Mathematics"
+  id = Column(Integer, ForeignKey("users.id"), primary_key=True)
 
-    # Employee sub-roles (Crucial for guarding your FastAPI routes!)
-    role = Column(String, nullable=False, server_default="STAFF")  # e.g., "TEACHER", "REGISTRAR", "ADMIN"
+  # Unique to employees
+  employee_number = Column(String, unique=True, nullable=False)
+  department = Column(String, nullable=False)
 
-    date_hired = Column(Date, nullable=True)
-    is_active = Column(Boolean, default=True)
+  # Employee sub-roles (Crucial for guarding your FastAPI routes!)
+  role = Column(String, nullable=False, default=EmployeeRoleEnum.TEACHING_STAFF)
 
-    __mapper_args__ = {
-        "polymorphic_identity": "employee",
-    }
+  date_hired = Column(Date, nullable=True)
+  is_active = Column(Boolean, default=True)
+
+  __mapper_args__ = {
+    "polymorphic_identity": "EMPLOYEE",
+  }
