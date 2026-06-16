@@ -1,21 +1,21 @@
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import relationship, validates
 
-from app.database.session import Base
+from app.core.base_model import AppBaseModel
 
 from .validation import TokenTypeEnum
 
 
-class TokenTable(Base):
+class TokenTable(AppBaseModel):
   __tablename__ = "tokens"
 
-  id = Column(Integer, primary_key=True, index=True)
   user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
   token = Column(String, unique=True, nullable=False, index=True)
   token_type = Column(String, nullable=False, default=TokenTypeEnum.EMAIL_VERIFICATION)
 
   expires_at = Column(DateTime, nullable=False)
   is_revoked = Column(Boolean, server_default="false", nullable=False)
+  family_id = Column(String, nullable=True)
 
   user = relationship("UserTable", back_populates="tokens")
 

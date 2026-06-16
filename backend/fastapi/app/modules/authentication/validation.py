@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.modules.user.validation import UserTypeEnum
 
@@ -22,7 +22,6 @@ class Token(BaseModel):
 class TokenAudience(BaseModel):
   id: int
   uuid: str
-  user_type: UserTypeEnum
 
 
 class UserToken(BaseModel):
@@ -31,9 +30,21 @@ class UserToken(BaseModel):
   token_type: TokenTypeEnum
   expires_at: datetime
   is_revoked: bool
+  family_id: str | None
+
+  model_config = {"from_attributes": True}
 
 
 class TokenResponse(BaseModel):
   access_token: str
   refresh_token: str
   expires_at: datetime
+
+
+class TokenRefreshRequest(BaseModel):
+  access_token: str = Field(default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVC...")
+  refresh_token: str = Field(default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVC...")
+
+class TokenValidateRequest(BaseModel):
+  token: str = Field(default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVC...")
+  token_type: TokenTypeEnum = Field(default=TokenTypeEnum.ACCESS)

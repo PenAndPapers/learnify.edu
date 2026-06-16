@@ -2,9 +2,17 @@ from .repository import (
   EmpoyeeResitory,
   EnrolleeResitory,
   StudentResitory,
-  UserInternalResponse,
+  UserRepository
 )
-from .validation import CreateEnrollee, EnrolleeApplicationStatusEnum, UserTypeEnum
+from .validation import CreateEnrollee, EnrolleeApplicationStatusEnum, UserTypeEnum, UserInternalResponse
+
+
+class UserService:
+  def __init__(self, repository: UserRepository):
+    self.repository = repository
+
+  def get_user(self, filter: dict) -> UserInternalResponse | None:
+    return self.repository.get_user(filter, False)
 
 
 class EnrolleeService:

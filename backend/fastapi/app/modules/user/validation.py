@@ -1,7 +1,7 @@
-from datetime import date
+from datetime import date, datetime, timezone
 from enum import StrEnum
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, AwareDatetime
 
 
 class UserTypeEnum(StrEnum):
@@ -71,6 +71,9 @@ class UserBaseSchema(BaseModel):
   date_of_birth: date | None = None
   address: str | None = None
   user_type: UserTypeEnum
+  created_at: datetime
+  updated_at: datetime
+  deleted_at: datetime | None = None
 
   model_config = {"from_attributes": True}
 

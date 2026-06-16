@@ -3,7 +3,7 @@ from uuid import uuid4
 from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, String, false
 from sqlalchemy.orm import relationship
 
-from app.database.session import Base
+from app.core.base_model import AppBaseModel
 
 from .validation import (
   EmployeeRoleEnum,
@@ -12,7 +12,7 @@ from .validation import (
 )
 
 
-class UserTable(Base):
+class UserTable(AppBaseModel):
   """
   The Single Source of Truth for Identity & Core Biography.
   Every human in the system has a row here.
@@ -20,7 +20,6 @@ class UserTable(Base):
 
   __tablename__ = "users"
 
-  id = Column(Integer, primary_key=True, index=True)
   uuid = Column(String, default=lambda: str(uuid4()), unique=True, nullable=False)
   email = Column(String, unique=True, nullable=False)
   password = Column(String, nullable=False)
