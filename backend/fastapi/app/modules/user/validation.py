@@ -1,7 +1,7 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, EmailStr, Field, AwareDatetime
+from pydantic import BaseModel, EmailStr, Field
 
 
 class UserTypeEnum(StrEnum):
@@ -59,7 +59,7 @@ class DepartmentEnum(StrEnum):
   LANGUAGES = "LANGUAGES"
 
 
-class UserBaseSchema(BaseModel):
+class UserBaseResponse(BaseModel):
   """User schema containing shared details"""
 
   uuid: str
@@ -78,7 +78,7 @@ class UserBaseSchema(BaseModel):
   model_config = {"from_attributes": True}
 
 
-class UserInternalResponse(UserBaseSchema):
+class UserInternalResponse(UserBaseResponse):
   """
   User schema containing sensitive user details
   Note:
@@ -90,19 +90,19 @@ class UserInternalResponse(UserBaseSchema):
   model_config = {"from_attributes": True}
 
 
-class EnrolleeResponse(UserBaseSchema):
+class EnrolleeResponse(UserBaseResponse):
   """Enrollee details"""
 
   model_config = {"from_attributes": True}
 
 
-class StudentResponse(UserBaseSchema):
+class StudentResponse(UserBaseResponse):
   """Student details"""
 
   model_config = {"from_attributes": True}
 
 
-class EmployeeResponse(UserBaseSchema):
+class EmployeeResponse(UserBaseResponse):
   """Employee details"""
 
   model_config = {"from_attributes": True}

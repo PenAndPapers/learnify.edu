@@ -3,8 +3,6 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-from app.modules.user.validation import UserTypeEnum
-
 
 class TokenTypeEnum(StrEnum):
   EMAIL_VERIFICATION = "EMAIL_VERIFICATION"
@@ -42,9 +40,10 @@ class TokenResponse(BaseModel):
 
 
 class TokenRefreshRequest(BaseModel):
-  access_token: str = Field(default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVC...")
-  refresh_token: str = Field(default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVC...")
+  access_token: str = Field(default="")
+  refresh_token: str = Field(default="")
+
 
 class TokenValidateRequest(BaseModel):
-  token: str = Field(default="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVC...")
-  token_type: TokenTypeEnum = Field(default=TokenTypeEnum.ACCESS)
+  token: str = Field(default="")
+  token_type: TokenTypeEnum = Field(default="")

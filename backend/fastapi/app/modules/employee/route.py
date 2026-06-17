@@ -1,0 +1,38 @@
+from fastapi import APIRouter
+
+router = APIRouter(prefix="/api/v1", tags=["Employee"])
+
+
+@router.get("/employee/all", response_model=None)
+async def get_employees() -> None:
+  pass
+
+
+@router.post("/employee/login", response_model=None)
+async def login_employee() -> None:
+  """Login an employee account"""
+  pass
+
+
+@router.post("/employee/create", response_model=None)
+async def create_employee() -> None:
+  """Create an employee account"""
+  pass
+
+
+@router.get("/employee/{uuid}", response_model=None)
+async def get_employee() -> None:
+  """Get an employee account"""
+  pass
+
+
+@router.patch("/employee/{uuid}", response_model=None)
+async def update_employee() -> None:
+  """Update an employee account"""
+  pass
+
+
+@router.delete("/employee/{uuid}", response_model=None)
+async def delete_employee() -> None:
+  """Delete an employee account"""
+  pass

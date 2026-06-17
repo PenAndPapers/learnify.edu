@@ -5,10 +5,13 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import get_database_url
 from app.database.session import Base
+from app.modules.authentication.table import TokenTable
+from app.modules.employee.table import EmployeeTable
+from app.modules.enrollee.table import EnrolleeTable
+from app.modules.student.table import StudentTable
 
 # add database tables here for migrations
-from app.modules.authentication.table import TokenTable
-from app.modules.user.table import EmployeeTable, EnrolleeTable, StudentTable
+from app.modules.user.table import UserTable
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -79,7 +82,7 @@ def run_migrations_online() -> None:
       connection=connection,
       target_metadata=target_metadata,
       compare_server_default=True,
-      compare_type=True
+      compare_type=True,
     )
 
     with context.begin_transaction():
