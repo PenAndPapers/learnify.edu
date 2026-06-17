@@ -7,7 +7,7 @@ from .repository import EmpoyeeResitory
 from .service import EmployeeService
 
 
-# User service dependency
+# Employee service dependency
 def get_employee_repository(db: Session = Depends(get_db)) -> EmpoyeeResitory:
   return EmpoyeeResitory(db)
 

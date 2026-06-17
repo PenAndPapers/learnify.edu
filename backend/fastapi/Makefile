@@ -64,6 +64,15 @@ update-deps:
 	$(MAKE) docker-build
 	@echo "Local dependencies and backend container baselines updated successfully."
 
+clean:
+	# Remove locked dependency configuration layers
+	rm -f uv.lock
+	rm -f requirements.txt
+
+	# Destroy the localized virtual environment cluster completely
+	rm -rf .venv
+	@echo "Application dependency workspace reset successfully. Run 'make install' and 'make update-deps' to bootstrap fresh."
+
 # ==============================================================================
 # Docker Operations (Scoped Exclusively to the Backend Domain Profile)
 # ==============================================================================

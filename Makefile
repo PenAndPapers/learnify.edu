@@ -12,8 +12,8 @@ backend-fastapi-install:
 backend-fastapi-update:
 	$(MAKE) -C backend/fastapi update-deps
 
-backend-fastapi-build:
-	$(MAKE) -C backend/fastapi docker-build
+backend-fastapi-clean:
+	$(MAKE) -C backend/fastapi clean
 
 backend-fastapi-up:
 	$(MAKE) -C backend/fastapi docker-up
@@ -24,6 +24,8 @@ backend-fastapi-down:
 backend-fastapi-down-v:
 	$(MAKE) -C backend/fastapi docker-down-v
 
+backend-fastapi-build:
+	$(MAKE) -C backend/fastapi docker-build
 
 # ==============================================================================
 # Nuxt Operations

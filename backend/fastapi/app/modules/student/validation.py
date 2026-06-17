@@ -28,6 +28,7 @@ class StudentFullResponse(UserInternalResponse):
 
   model_config = {"from_attributes": True}
 
+
 class StudentResponse(UserBaseResponse):
   """Student details"""
 
@@ -43,3 +44,4 @@ class CreateStudent(CreateUser):
     ..., ge=1, le=5, description="Year level must be between 1 and 5"
   )
   user_type: UserTypeEnum = Field(default=UserTypeEnum.STUDENT)
+  is_verified: int = True

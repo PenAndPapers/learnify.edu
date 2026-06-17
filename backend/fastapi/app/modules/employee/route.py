@@ -1,4 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from .dependency import get_employee_service
+from .service import EmployeeService
+from .validation import EmployeeResponse, CreateEmployee
 
 router = APIRouter(prefix="/api/v1", tags=["Employee"])
 
@@ -14,10 +18,16 @@ async def login_employee() -> None:
   pass
 
 
-@router.post("/employee/create", response_model=None)
-async def create_employee() -> None:
+@router.post("/employee/create", response_model=EmployeeResponse)
+async def create_employee(
+  employee: CreateEmployee,
+  employee_service: EmployeeService = Depends(get_employee_service)
+) -> EmployeeResponse:
   """Create an employee account"""
-  pass
+  new_employee = employee_service.create(employee)
+
+  return EmployeeResponse.model_validate(new_employee)
+  
 
 
 @router.get("/employee/{uuid}", response_model=None)

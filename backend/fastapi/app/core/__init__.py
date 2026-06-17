@@ -8,8 +8,8 @@ from .config import (
   get_security_config,
   get_smtp_config,
 )
-from .model import AppModel
 from .redis import redis_lifespan
+from .table import BaseTable
 
 __all__ = [
   "env_config",
@@ -20,6 +20,6 @@ __all__ = [
   "get_database_url",
   "get_security_config",
   "get_smtp_config",
-  "AppModel"
-  "redis_lifespan"
+  "BaseTable",
+  "redis_lifespan",
 ]

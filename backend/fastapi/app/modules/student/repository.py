@@ -15,12 +15,11 @@ class StudentResitory:
   def _student_number_generator(self) -> int:
     return uuid.uuid4().int
 
-  def create(self, data: CreateStudent) -> StudentFullResponse:
+  def create(self, student: CreateStudent) -> StudentFullResponse:
     """Store student info"""
     try:
       record = self.model(
-        student_number=self._student_number_generator(),
-        **data.model_dump()
+        student_number=self._student_number_generator(), **student.model_dump()
       )
       self.db.add(record)
       self.db.commit()
@@ -29,6 +28,6 @@ class StudentResitory:
 
     except Exception as e:
       self.db.rollback()
-      error_message = f"Error: Database error occurred while creating student for email - {data.email}"
+      error_message = f"Error: Database error occurred while creating student for email - {student.email}"
       logging.exception(error_message)
       raise RuntimeError(error_message) from e

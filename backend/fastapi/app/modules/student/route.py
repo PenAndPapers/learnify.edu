@@ -20,7 +20,9 @@ async def login_student() -> None:
 
 
 @router.post("/student/create", response_model=StudentResponse)
-async def create_student(student: CreateStudent, student_service: StudentService = Depends(get_student_service)) -> StudentResponse:
+async def create_student(
+  student: CreateStudent, student_service: StudentService = Depends(get_student_service)
+) -> StudentResponse:
   """Create student account"""
   new_student = student_service.create(student)
 

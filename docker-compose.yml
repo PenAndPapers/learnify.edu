@@ -41,7 +41,7 @@ services:
       - ENVIRONMENT=${ENVIRONMENT:-development}
       - PYTHONDONTWRITEBYTECODE=1
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/check-health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/system/check-health"]
       interval: 10s
       timeout: 5s
       retries: 3

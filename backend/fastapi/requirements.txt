@@ -17,7 +17,7 @@ annotated-doc==0.0.4
     # via fastapi
 annotated-types==0.7.0
     # via pydantic
-anyio==4.13.0
+anyio==4.14.0
     # via
     #   httpx
     #   starlette
@@ -25,7 +25,7 @@ bcrypt==3.2.2
     # via
     #   learnify-edu (pyproject.toml)
     #   passlib
-certifi==2026.5.20
+certifi==2026.6.17
     # via
     #   httpcore
     #   httpx
@@ -39,7 +39,7 @@ colorama==0.4.6
     # via pytest-watch
 coverage==7.14.1
     # via pytest-cov
-cryptography==48.0.0
+cryptography==49.0.0
     # via pyjwt
 dnspython==2.8.0
     # via email-validator
@@ -47,7 +47,7 @@ docopt==0.6.2
     # via pytest-watch
 email-validator==2.3.0
     # via learnify-edu (pyproject.toml)
-fastapi==0.136.3
+fastapi==0.137.1
     # via learnify-edu (pyproject.toml)
 h11==0.16.0
     # via
@@ -93,7 +93,7 @@ pygments==2.20.0
     # via pytest
 pyjwt==2.13.0
     # via learnify-edu (pyproject.toml)
-pytest==9.0.3
+pytest==9.1.0
     # via
     #   learnify-edu (pyproject.toml)
     #   pytest-cov
@@ -109,13 +109,13 @@ python-dotenv==1.2.2
     # via pydantic-settings
 redis==8.0.0
     # via learnify-edu (pyproject.toml)
-ruff==0.15.15
+ruff==0.15.17
     # via learnify-edu (pyproject.toml)
-sqlalchemy==2.0.50
+sqlalchemy==2.0.51
     # via
     #   learnify-edu (pyproject.toml)
     #   alembic
-starlette==1.2.1
+starlette==1.3.1
     # via fastapi
 typing-extensions==4.15.0
     # via

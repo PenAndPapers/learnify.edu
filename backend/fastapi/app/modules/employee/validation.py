@@ -3,7 +3,11 @@ from enum import StrEnum
 
 from pydantic import Field
 
-from app.modules.user.validation import CreateUser, UserBaseResponse
+from app.modules.user.validation import (
+  CreateUser,
+  UserBaseResponse,
+  UserInternalResponse,
+)
 
 
 class EmployeeRoleEnum(StrEnum):
@@ -36,20 +40,33 @@ class DepartmentEnum(StrEnum):
   LANGUAGES = "LANGUAGES"
 
 
+class EmployeeFullResponse(UserInternalResponse):
+  """Full employee details"""
+
+  employee_number: int
+  department: DepartmentEnum
+  role: EmployeeRoleEnum
+  date_hired: date
+  is_active: bool
+
+  model_config = {"from_attributes": True}
+
+
 class EmployeeResponse(UserBaseResponse):
   """Employee details"""
+
+  employee_number: int
+  department: DepartmentEnum
+  role: EmployeeRoleEnum
+  date_hired: date
+  is_active: bool
 
   model_config = {"from_attributes": True}
 
 
 class CreateEmployee(CreateUser):
-  employee_number: int = Field(
-    ...,
-    ge=10000000,
-    le=999999999999,
-    description="Must be an integer between 8 and 12 digits",
-  )
   department: DepartmentEnum = Field(default=DepartmentEnum.ADMISSIONS)
   role: EmployeeRoleEnum = Field(default=EmployeeRoleEnum.TEACHING_STAFF)
   date_hired: date | None = None
   is_active: bool = True
+  is_verified: bool = True
