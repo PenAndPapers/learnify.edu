@@ -1,4 +1,8 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+
+from .dependency import get_student_service
+from .service import StudentService
+from .validation import CreateStudent, StudentResponse
 
 router = APIRouter(prefix="/api/v1", tags=["Student"])
 
@@ -12,14 +16,15 @@ async def get_students() -> None:
 @router.post("/student/login", response_model=None)
 async def login_student() -> None:
   """Login student"""
-
   pass
 
 
-@router.post("/student/create", response_model=None)
-async def create_student() -> None:
+@router.post("/student/create", response_model=StudentResponse)
+async def create_student(student: CreateStudent, student_service: StudentService = Depends(get_student_service)) -> StudentResponse:
   """Create student account"""
-  pass
+  new_student = student_service.create(student)
+
+  return new_student
 
 
 @router.get("/student/{uuid}", response_model=None)

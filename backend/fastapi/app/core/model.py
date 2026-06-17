@@ -3,7 +3,7 @@ from sqlalchemy import Column, DateTime, Integer, func
 from app.database.session import Base
 
 
-class AppBaseModel(Base):
+class AppModel(Base):
   """
   This will be the base schema of the application
   other schema will extend this schema to apply the columns

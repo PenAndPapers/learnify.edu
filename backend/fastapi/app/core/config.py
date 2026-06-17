@@ -114,6 +114,13 @@ def get_cache_config() -> CacheConfig:
   return CacheConfig(host=env_config.redis_host, port=env_config.redis_port)
 
 
+cache_config = get_cache_config()
+
+
+def get_cache_url() -> str:
+  return f"redis://{cache_config.host}:{cache_config.port}"
+
+
 def get_smtp_config() -> SMTPConfig:
   return SMTPConfig(
     host=env_config.smtp_host,

@@ -17,11 +17,11 @@ async def student_application_register(
   enrolle_service: EnrolleeService = Depends(get_enrolle_service),
   token_service: TokenService = Depends(get_token_service),
 ) -> TokenResponse:
-  enrollee = enrolle_service.create(enrrollee)
+  new_enrollee = enrolle_service.create(enrrollee)
 
-  if enrollee:
+  if new_enrollee:
     token = token_service.create_auth_tokens(
-      TokenAudience(id=enrollee.id, uuid=enrollee.uuid)
+      TokenAudience(id=new_enrollee.id, uuid=new_enrollee.uuid)
     )
 
   return token

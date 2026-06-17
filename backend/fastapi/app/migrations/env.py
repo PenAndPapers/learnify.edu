@@ -5,12 +5,12 @@ from sqlalchemy import engine_from_config, pool
 
 from app.core.config import get_database_url
 from app.database.session import Base
+
+# add database tables here for migrations
 from app.modules.authentication.table import TokenTable
 from app.modules.employee.table import EmployeeTable
 from app.modules.enrollee.table import EnrolleeTable
 from app.modules.student.table import StudentTable
-
-# add database tables here for migrations
 from app.modules.user.table import UserTable
 
 # this is the Alembic Config object, which provides
