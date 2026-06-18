@@ -5,23 +5,22 @@ Revises: 624c9363288c
 Create Date: 2026-06-18 01:23:05.398192
 
 """
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
-from app.modules.employee.validation import EmployeeRoleEnum, DepartmentEnum
+from app.modules.authentication.validation import TokenTypeEnum
+from app.modules.employee.validation import DepartmentEnum, EmployeeRoleEnum
 from app.modules.enrollee.validation import EnrolleeApplicationStatusEnum
 from app.modules.student.validation import StudentAcademicStatusEnum
-from app.modules.authentication.validation import TokenTypeEnum
 from app.modules.user.validation import UserTypeEnum
-
 
 # revision identifiers, used by Alembic.
 revision: str = 'a7b21fc1b25b'
-down_revision: Union[str, Sequence[str], None] = '624c9363288c'
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = '624c9363288c'
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -31,7 +30,7 @@ def upgrade() -> None:
     sa_role_enum = sa.Enum(EmployeeRoleEnum, name='employeeroleenum')
     sa_department_enum.create(op.get_bind(), checkfirst=True)
     sa_role_enum.create(op.get_bind(), checkfirst=True)
-    
+
     sa_application_status_enum = sa.Enum(EnrolleeApplicationStatusEnum, name="applicationstatusenum")
     sa_application_status_enum.create(op.get_bind(), checkfirst=True)
 
@@ -43,11 +42,11 @@ def upgrade() -> None:
 
     sa_user_type_enum = sa.Enum(UserTypeEnum, name="usertypeenum")
     sa_user_type_enum.create(op.get_bind(), checkfirst=True)
-    
+
 
     # 2. Alter columns with an explicit PostgreSQL USING clause cast
     op.alter_column(
-        'employees', 
+        'employees',
         'department',
         existing_type=sa.String(),
         type_=sa_department_enum,
@@ -55,7 +54,7 @@ def upgrade() -> None:
         postgresql_using="department::departmentenum"
     )
     op.alter_column(
-        'employees', 
+        'employees',
         'role',
         existing_type=sa.String(),
         type_=sa_role_enum,
@@ -64,7 +63,7 @@ def upgrade() -> None:
     )
 
     op.alter_column(
-        'enrollees', 
+        'enrollees',
         'application_status',
         existing_type=sa.String(),
         type_=sa_application_status_enum,
@@ -73,7 +72,7 @@ def upgrade() -> None:
     )
 
     op.alter_column(
-        'students', 
+        'students',
         'academic_status',
         existing_type=sa.String(),
         type_=sa_acedemic_status_enum,
@@ -82,7 +81,7 @@ def upgrade() -> None:
     )
 
     op.alter_column(
-        'tokens', 
+        'tokens',
         'token_type',
         existing_type=sa.String(),
         type_=sa_token_type_enum,
@@ -91,7 +90,7 @@ def upgrade() -> None:
     )
 
     op.alter_column(
-        'users', 
+        'users',
         'user_type',
         existing_type=sa.String(),
         type_=sa_user_type_enum,
@@ -104,14 +103,14 @@ def downgrade() -> None:
     """Downgrade schema."""
     # 1. Revert columns back to standard String/Varchar type
     op.alter_column(
-        'employees', 
+        'employees',
         'department',
         existing_type=sa.Enum(DepartmentEnum, name='departmentenum'),
         type=sa.String(),
         existing_nullable=False
     )
     op.alter_column(
-        'employees', 
+        'employees',
         'role',
         existing_type=sa.Enum(EmployeeRoleEnum, name='employeeroleenum'),
         type=sa.String(),
@@ -119,7 +118,7 @@ def downgrade() -> None:
     )
 
     op.alter_column(
-        'enrollees', 
+        'enrollees',
         'application_status',
         existing_type=sa.Enum(EnrolleeApplicationStatusEnum, name='applicationstatusenum'),
         type=sa.String(),
@@ -127,7 +126,7 @@ def downgrade() -> None:
     )
 
     op.alter_column(
-        'students', 
+        'students',
         'academic_status',
         existing_type=sa.Enum(StudentAcademicStatusEnum, name='academicstatusenum'),
         type=sa.String(),
@@ -135,7 +134,7 @@ def downgrade() -> None:
     )
 
     op.alter_column(
-        'tokens', 
+        'tokens',
         'token_type',
         existing_type=sa.Enum(TokenTypeEnum, name='tokentypeenum'),
         type=sa.String(),
@@ -143,7 +142,7 @@ def downgrade() -> None:
     )
 
     op.alter_column(
-        'users', 
+        'users',
         'user_type',
         existing_type=sa.Enum(UserTypeEnum, name='usertypeenum'),
         type=sa.String(),

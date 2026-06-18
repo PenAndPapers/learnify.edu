@@ -1,12 +1,13 @@
 from datetime import date
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Date, String, Enum, false
+from sqlalchemy import Boolean, Date, Enum, String, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.table import BaseTable
 
 from .validation import UserTypeEnum
+
 
 class UserTable(BaseTable):
   __tablename__ = "users"

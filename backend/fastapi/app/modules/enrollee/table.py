@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String, Enum
+from sqlalchemy import Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.modules.user.table import UserTable
