@@ -8,7 +8,7 @@ from .config import get_cache_url
 
 # 1. Define the lifespan context manager
 @asynccontextmanager
-def redis_lifespan(app: FastAPI):
+async def redis_lifespan(app: FastAPI):
   # This runs on startup
   app.state.redis = aioredis.from_url(
     get_cache_url(),

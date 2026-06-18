@@ -16,7 +16,7 @@ def root():
 
 
 @router.get("/check-health")
-def application_health_check(
+async def application_health_check(
   request: Request,
   db: Session = Depends(get_db),
 ) -> dict[str, str]:
@@ -40,11 +40,11 @@ def check_database(db: Session = Depends(get_db)) -> dict[str, str]:
 
 
 @router.get("/check-redis")
-def check_redis(request: Request) -> dict[str, str]:
+async def check_redis(request: Request) -> dict[str, str]:
   await request.app.state.redis.incr("hits")
   return {"hits": await request.app.state.redis.get("hits")}
 
 
 @router.get("/check-send-email")
-def check_send_email() -> None:
+async def check_send_email() -> None:
   await send_welcome_email("testuser@email.com", "Test email subject")

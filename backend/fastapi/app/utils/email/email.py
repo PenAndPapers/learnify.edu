@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 smtp = get_smtp_config()
 
 
-def send_email(to: str, subject: str, content: str) -> None:
+async def send_email(to: str, subject: str, content: str) -> None:
   message = EmailMessage()
   message["From"] = f"{smtp.from_name} <{smtp.from_email}>"
   message["To"] = to
@@ -32,7 +32,7 @@ def send_email(to: str, subject: str, content: str) -> None:
     raise e
 
 
-def send_welcome_email(to: str, subject: str):
+async def send_welcome_email(to: str, subject: str):
   """
   Pre-baked template wrapper for onboarding registrations.
   """
