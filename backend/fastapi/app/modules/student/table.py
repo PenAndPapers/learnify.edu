@@ -12,7 +12,7 @@ class StudentTable(UserTable):
   # Explicit foreign key linking for joined table inheritance
   id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), primary_key=True)
 
-  student_id: Mapped[str] = mapped_column(String(18), CheckConstraint("length(student_number) = 18", name="ck_student_number_length"), unique=True)
+  student_id: Mapped[str] = mapped_column(String, unique=True)
   year_level: Mapped[int] = mapped_column(Integer, default=1)
   academic_status: Mapped[str] = mapped_column(
     Enum(StudentAcademicStatusEnum), default=StudentAcademicStatusEnum.ACTIVE

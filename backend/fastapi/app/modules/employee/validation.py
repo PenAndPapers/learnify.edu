@@ -43,7 +43,7 @@ class DepartmentEnum(StrEnum):
 class EmployeeFullResponse(UserInternalResponse):
   """Full employee details"""
 
-  employee_number: int
+  employee_id: str
   department: DepartmentEnum
   role: EmployeeRoleEnum
   date_hired: date
@@ -55,7 +55,7 @@ class EmployeeFullResponse(UserInternalResponse):
 class EmployeeResponse(UserBaseResponse):
   """Employee details"""
 
-  employee_number: int
+  employee_id: str
   department: DepartmentEnum
   role: EmployeeRoleEnum
   date_hired: date

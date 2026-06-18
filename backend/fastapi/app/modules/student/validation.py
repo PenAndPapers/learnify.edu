@@ -22,7 +22,7 @@ class StudentAcademicStatusEnum(StrEnum):
 class StudentFullResponse(UserInternalResponse):
   """Student full detail response"""
 
-  studen_number: int
+  studen_id: str
   year_level: int
   academic_status: StudentAcademicStatusEnum
 
@@ -32,7 +32,7 @@ class StudentFullResponse(UserInternalResponse):
 class StudentResponse(UserBaseResponse):
   """Student details"""
 
-  student_number: int
+  student_number: str
   year_level: int
   academic_status: StudentAcademicStatusEnum
 
