@@ -50,7 +50,7 @@ def upgrade() -> None:
         'employees', 
         'department',
         existing_type=sa.String(),
-        type=sa_department_enum,
+        type_=sa_department_enum,
         existing_nullable=False,
         postgresql_using="department::departmentenum"
     )
@@ -58,7 +58,7 @@ def upgrade() -> None:
         'employees', 
         'role',
         existing_type=sa.String(),
-        type=sa_role_enum,
+        type_=sa_role_enum,
         existing_nullable=False,
         postgresql_using="role::employeeroleenum"
     )
@@ -67,7 +67,7 @@ def upgrade() -> None:
         'enrollees', 
         'application_status',
         existing_type=sa.String(),
-        type=sa_application_status_enum,
+        type_=sa_application_status_enum,
         existing_nullable=False,
         postgresql_using="application_status::applicationstatusenum"
     )
@@ -76,7 +76,7 @@ def upgrade() -> None:
         'students', 
         'academic_status',
         existing_type=sa.String(),
-        type=sa_acedemic_status_enum,
+        type_=sa_acedemic_status_enum,
         existing_nullable=False,
         postgresql_using="academic_status::academicstatusenum"
     )
@@ -85,7 +85,7 @@ def upgrade() -> None:
         'tokens', 
         'token_type',
         existing_type=sa.String(),
-        type=sa_token_type_enum,
+        type_=sa_token_type_enum,
         existing_nullable=False,
         postgresql_using="token_type::tokentypeenum"
     )
@@ -94,7 +94,7 @@ def upgrade() -> None:
         'users', 
         'user_type',
         existing_type=sa.String(),
-        type=sa_user_type_enum,
+        type_=sa_user_type_enum,
         existing_nullable=False,
         postgresql_using="user_type::usertypeenum"
     )
