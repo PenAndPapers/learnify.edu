@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api/v1/authentication", tags=["Authentication"])
 
 
 @router.post("/token/refresh", response_model=TokenResponse)
-async def refresh_token(
+def refresh_token(
   token: TokenRefreshRequest,
   token_service: TokenService = Depends(get_token_service),
   user_service: UserService = Depends(get_user_service),
@@ -22,7 +22,7 @@ async def refresh_token(
 
 
 @router.post("/token/validate", response_model=bool)
-async def validate_token(
+def validate_token(
   token: TokenValidateRequest, token_service: TokenService = Depends(get_token_service)
 ) -> bool:
   token = token_service.validate_token(token)

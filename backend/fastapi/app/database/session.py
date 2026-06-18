@@ -9,7 +9,13 @@ from app.core.config import get_database_url
 Base = declarative_base()
 
 # Create engine
-engine = create_engine(get_database_url())
+engine = create_engine(
+  get_database_url(),
+  pool_size=5,
+  max_overflow=50,
+  pool_pre_ping=True,
+  pool_use_lifo=True
+)
 
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
