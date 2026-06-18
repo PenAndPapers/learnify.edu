@@ -1,11 +1,12 @@
 from datetime import date
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Date, String, false
+from sqlalchemy import Boolean, Date, String, Enum, false
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.table import BaseTable
 
+from .validation import UserTypeEnum
 
 class UserTable(BaseTable):
   __tablename__ = "users"
@@ -25,7 +26,7 @@ class UserTable(BaseTable):
   is_verified: Mapped[bool] = mapped_column(Boolean, server_default=false())
 
   # Polymorphism configuration
-  user_type: Mapped[str] = mapped_column(String)
+  user_type: Mapped[UserTypeEnum] = mapped_column(Enum(UserTypeEnum))
 
   # Modern 2.0 relationship typing
   tokens: Mapped[list["TokenTable"]] = relationship(

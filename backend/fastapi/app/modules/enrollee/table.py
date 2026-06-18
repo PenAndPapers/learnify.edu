@@ -1,4 +1,4 @@
-from sqlalchemy import ForeignKey, Integer, String
+from sqlalchemy import ForeignKey, Integer, String, Enum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.modules.user.table import UserTable
@@ -11,8 +11,8 @@ class EnrolleeTable(UserTable):
 
   id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), primary_key=True)
 
-  application_status: Mapped[str] = mapped_column(
-    String, default=EnrolleeApplicationStatusEnum.REGISTERED
+  application_status: Mapped[EnrolleeApplicationStatusEnum] = mapped_column(
+    Enum(EnrolleeApplicationStatusEnum), default=EnrolleeApplicationStatusEnum.REGISTERED
   )
   chosen_course: Mapped[str | None] = mapped_column(String)
   previous_school: Mapped[str | None] = mapped_column(String)

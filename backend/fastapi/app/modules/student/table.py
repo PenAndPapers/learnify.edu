@@ -1,4 +1,4 @@
-from sqlalchemy import CheckConstraint, ForeignKey, Integer, String
+from sqlalchemy import CheckConstraint, ForeignKey, Integer, String, Enum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.modules.user.table import UserTable
@@ -12,10 +12,10 @@ class StudentTable(UserTable):
   # Explicit foreign key linking for joined table inheritance
   id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), primary_key=True)
 
-  student_number: Mapped[str] = mapped_column(String(18), CheckConstraint("length(student_number) = 18", name="ck_student_number_length"), unique=True)
+  student_id: Mapped[str] = mapped_column(String(18), CheckConstraint("length(student_number) = 18", name="ck_student_number_length"), unique=True)
   year_level: Mapped[int] = mapped_column(Integer, default=1)
   academic_status: Mapped[str] = mapped_column(
-    String, default=StudentAcademicStatusEnum.ACTIVE
+    Enum(StudentAcademicStatusEnum), default=StudentAcademicStatusEnum.ACTIVE
   )
 
   __mapper_args__ = {

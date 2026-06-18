@@ -12,19 +12,19 @@ class EmpoyeeResitory:
     self.db = db
     self.model = EmployeeTable
 
-  def _employee_number_generator(self) -> int:
-    return uuid.uuid4().int
+  def _employee_id_generator(self) -> str:
+    return str(uuid.uuid4())
 
   def create(self, employee: CreateEmployee) -> EmployeeFullResponse:
     """Store employee details"""
     try:
       record = self.model(
-        employee_number=self._employee_number_generator(), **employee.model_dump()
+        employee_id=self._employee_id_generator(), **employee.model_dump()
       )
       self.db.add(record)
       self.db.commit()
       self.db.refresh(record)
-      
+
       return EmployeeFullResponse.model_validate(record)
 
     except Exception as e:

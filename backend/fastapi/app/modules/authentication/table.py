@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 
 from app.core import BaseTable
@@ -15,8 +15,8 @@ class TokenTable(BaseTable):
     Integer, ForeignKey("users.id", ondelete="CASCADE")
   )
   token: Mapped[str] = mapped_column(String, unique=True, index=True)
-  token_type: Mapped[str] = mapped_column(
-    String, default=TokenTypeEnum.EMAIL_VERIFICATION
+  token_type: Mapped[TokenTypeEnum] = mapped_column(
+    Enum(TokenTypeEnum), default=TokenTypeEnum.EMAIL_VERIFICATION
   )
 
   expires_at: Mapped[datetime] = mapped_column(DateTime)

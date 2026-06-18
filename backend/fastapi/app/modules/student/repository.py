@@ -12,14 +12,14 @@ class StudentResitory:
     self.db = db
     self.model = StudentTable
 
-  def _student_number_generator(self) -> int:
-    return uuid.uuid4().int
+  def _student_id_generator(self) -> str:
+    return str(uuid.uuid4())
 
   def create(self, student: CreateStudent) -> StudentFullResponse:
     """Store student info"""
     try:
       record = self.model(
-        student_number=self._student_number_generator(), **student.model_dump()
+        student_id=self._student_id_generator(), **student.model_dump()
       )
       self.db.add(record)
       self.db.commit()

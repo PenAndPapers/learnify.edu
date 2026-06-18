@@ -1,5 +1,5 @@
-from .validation import CreateEmployee, EmployeeFullResponse
 from .repository import EmpoyeeResitory
+from .validation import CreateEmployee, EmployeeFullResponse
 
 
 class EmployeeService:
