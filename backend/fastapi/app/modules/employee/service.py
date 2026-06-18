@@ -12,4 +12,6 @@ class EmployeeService:
 
     new_employee = self.repository.create(validated_employee)
 
+    self.repository.db.flush()
+
     return new_employee

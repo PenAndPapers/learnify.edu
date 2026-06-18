@@ -24,7 +24,11 @@ class EnrolleeService:
       user_type=UserTypeEnum.ENROLLEE,
       is_verified=False,
     )
-    return self.repository.create(converted_data)
+    new_enrollee = self.repository.create(converted_data)
+
+    self.repository.db.flush()
+
+    return new_enrollee
 
   def get_enrollee(self, filter: dict) -> UserInternalResponse | None:
     return self.repository.get_enrollee(filter, False)

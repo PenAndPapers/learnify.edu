@@ -16,20 +16,10 @@ class EnrolleeResitory:
 
   def create(self, data: CreateEnrollee) -> UserInternalResponse:
     """Store user info"""
-    try:
-      record = self.model(**data.model_dump())
-      self.db.add(record)
-      self.db.commit()
-      self.db.refresh(record)
-      return record
-    except Exception as e:
-      self.db.rollback()
-
-      logging.exception(
-        f"Database error occurred while creating enrollee for email: {data.email}"
-      )
-
-      raise RuntimeError("Failed to create enrollee") from e
+    record = self.model(**data.model_dump())
+    self.db.add(record)
+    
+    return record
 
   def get_enrollee(
     self, filter: dict, raise_error: bool = True

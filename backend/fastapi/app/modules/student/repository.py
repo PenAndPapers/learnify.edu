@@ -1,4 +1,3 @@
-import logging
 import uuid
 
 from sqlalchemy.orm import Session
@@ -16,18 +15,12 @@ class StudentResitory:
     return str(uuid.uuid4())
 
   def create(self, student: CreateStudent) -> StudentFullResponse:
-    """Store student info"""
-    try:
-      record = self.model(
-        student_id=self._student_id_generator(), **student.model_dump()
-      )
-      self.db.add(record)
-      self.db.commit()
-      self.db.refresh(record)
-      return record
+    """Store student information in the database"""
 
-    except Exception as e:
-      self.db.rollback()
-      error_message = f"Error: Database error occurred while creating student for email - {student.email}"
-      logging.exception(error_message)
-      raise RuntimeError(error_message) from e
+    record = self.model(
+      student_id=self._student_id_generator(), **student.model_dump()
+    )
+    self.db.add(record)
+
+    return record
+

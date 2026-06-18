@@ -11,4 +11,6 @@ class StudentService:
 
     new_student = self.repository.create(validated_student)
 
+    self.repository.db.flush()
+
     return new_student

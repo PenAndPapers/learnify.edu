@@ -15,36 +15,28 @@ class TokenRepository:
     self.model = TokenTable
 
   def store_auth_tokens(self, tokens: list[UserToken]) -> list[UserToken]:
-    try:
-      records = [self.model(**token.model_dump()) for token in tokens]
+    """Store authentication tokens in the database"""
 
-      self.db.add_all(records)
-      self.db.commit()
+    records = [self.model(**token.model_dump()) for token in tokens]
 
-      for record in records:
-        self.db.refresh(record)
+    self.db.add_all(records)
 
-      return records
-    except Exception as e:
-      self.db.rollback()
-
-      logging.exception("Error: Database error occurred while storing token")
-      raise RuntimeError("Failed to store token") from e
+    return records
 
   def get_by_token(self, token: str) -> UserToken | None:
     if not token:
-      raise ValueError("Error: Missing token")
+      raise HTTPException(status_code=400, detail="Error: Token is required")
 
     db_token = self.db.query(self.model).filter(self.model.token == token).first()
 
-    if not token:
+    if not db_token:
       raise HTTPException(status_code=404, detail="Error: Token not found")
 
     return UserToken.model_validate(db_token)
 
   def get_by_tokens(self, tokens: list[str] | None = None) -> list[UserToken] | None:
     if tokens is None:
-      raise ValueError("Error: Invalid set of tokens. Provide at least one token.")
+      raise HTTPException(status_code=400, detail="Error: Invalid set of tokens. Provide at least one token.")
 
     try:
       query = (
@@ -54,22 +46,23 @@ class TokenRepository:
       )
       db_tokens = self.db.scalars(query).all()
 
+      if not db_tokens or len(db_tokens) != len(tokens):
+        raise HTTPException(status_code=404, detail="Error: One or more tokens not found")
+
       return [UserToken.model_validate(token) for token in db_tokens]
     except Exception as e:
-      raise RuntimeError("Error: Failed to fetch token") from e
+      raise HTTPException(status_code=500, detail="Error: Failed to fetch token") from e
 
   def revoke_tokens(self, tokens: list[str] | None = None) -> None:
     if tokens is None or len(tokens) != 2:
-      raise ValueError("Error: Missing tokens")
+      raise HTTPException(status_code=400, detail="Error: Missing tokens")
 
-    try:
-      self.db.execute(
-        update(self.model)
-        .where(self.model.token.in_(tokens))
-        .values(is_revoked=True, deleted_at=datetime.now(UTC))
-      )
+    self.db.execute(
+      update(self.model)
+      .where(self.model.token.in_(tokens))
+      .values(is_revoked=True, deleted_at=datetime.now(UTC))
+    )
 
-      self.db.commit()
-    except Exception as e:
-      self.db.rollback()
-      raise RuntimeError("Error: Failed to revoke token") from e
+
+
+    

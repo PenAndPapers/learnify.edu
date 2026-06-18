@@ -11,8 +11,10 @@ Base = declarative_base()
 # Create engine
 engine = create_engine(
   get_database_url(),
-  pool_size=5,
+  pool_size=20,
   max_overflow=50,
+  pool_timeout=30,
+  pool_recycle=1800,
   pool_pre_ping=True,
   pool_use_lifo=True
 )
@@ -26,11 +28,18 @@ logger = logging.getLogger(__name__)
 def get_db():
   db = SessionLocal()
   try:
-    logger.debug("Database connection established")
+    logger.debug("Database connection is established. Starting transaction.")
     yield db
+
+    # If the request finishes and reaches this line without raising an exception,
+    # we commit the entire transaction atomically here.
+    db.commit()
   except Exception as e:
-    logger.error(f"Database error occurred: {str(e)}")
+    # If ANY exception or HTTPException was raised anywhere in the route,
+    # service, or repository, we catch it here and roll back completely.
+    db.rollback()
+    logger.error(f"Database error has occurred, transaction rolled back: {str(e)}")
     raise
   finally:
-    logger.debug("Database connection closed")
+    logger.debug("Database connection is closed.")
     db.close()

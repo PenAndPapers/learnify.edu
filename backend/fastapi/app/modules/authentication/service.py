@@ -1,6 +1,7 @@
 import logging
 import uuid
 from datetime import UTC, datetime, timedelta
+from fastapi import HTTPException
 
 import jwt
 
@@ -41,10 +42,9 @@ class TokenService:
     Returns:
       Token: object containing the token string and expiration time
     """
+
     if not isinstance(token_type, TokenTypeEnum):
-      error_message = f"Error: Invalid or missing token type {token_type}. Token generation is aborted!"
-      logging.error(error_message)
-      raise ValueError(error_message)
+      raise HTTPException(status_code=400, detail="Error: Invalid or missing token type. Token generation is aborted!")
 
     now = datetime.now(UTC)
     claims = {
@@ -61,9 +61,7 @@ class TokenService:
       case TokenTypeEnum.REFRESH:
         expires_at = now + timedelta(days=self.refresh_token_expire_days)
       case _:
-        error_message = f"Error: Unhandled token type {token_type}"
-        logging.critical(error_message)
-        raise NotImplementedError(error_message)
+        raise HTTPException(status_code=400, detail="Error: Unhandled token type. Token generation is aborted!")
 
     claims["exp"] = expires_at.timestamp()
 
@@ -87,28 +85,20 @@ class TokenService:
       )
 
       if payload.get("type") != token.token_type:
-        error_message = f"Error: Token type mismatch {token}"
-        logging.error(error_message)
-        raise ValueError(error_message)
+        raise HTTPException(status_code=400, detail="Error: Token type mismatch")
 
       db_token = self.repository.get_by_token(token.token)
 
       if db_token and db_token.is_revoked:
-        error_message = f"Error: Token is revoked {token}"
-        logging.error(error_message)
-        raise ValueError(error_message)
+        raise HTTPException(status_code=400, detail="Error: Token is revoked")
 
       return db_token
 
     except jwt.ExpiredSignatureError as e:
-      error_message = f"Error: Token is expired {token}"
-      logging.error(error_message)
-      raise ValueError(error_message) from e
+      raise HTTPException(status_code=400, detail="Error: Token is expired") from e
 
     except jwt.InvalidTokenError as e:
-      error_message = f"Error: Token signature is invalid {token}"
-      logging.error(error_message)
-      raise ValueError(error_message) from e
+      raise HTTPException(status_code=400, detail="Error: Token signature is invalid") from e
 
   def refresh_token(
     self, token: TokenRefreshRequest, user_service: UserService
@@ -118,7 +108,7 @@ class TokenService:
     """
 
     if token is None:
-      raise ValueError("Error: Token is not valid")
+      raise HTTPException(status_code=400, detail="Error: Token is not valid")
 
     validated_token = TokenRefreshRequest.model_validate(token)
 
@@ -128,9 +118,7 @@ class TokenService:
 
     # check that both access token and refresh token is in database
     if not db_tokens or len(db_tokens) != 2:
-      error_message = "Error: Unable to fetch token"
-      logging.error(error_message)
-      raise ValueError(error_message)
+      raise HTTPException(status_code=400, detail="Error: Token does not exist.")
 
     access_token = next(
       (token for token in db_tokens if token.token_type == TokenTypeEnum.ACCESS.value),
@@ -143,38 +131,30 @@ class TokenService:
 
     # check that access and refresh token has value
     if access_token is None or refresh_token is None:
-      error_message = "Error: Missing token"
-      logging.error(error_message)
-      raise ValueError(error_message)
+      raise HTTPException(status_code=400, detail="Error: Missing token")
 
     # check that token are not revoked before creating a new one
     if access_token.is_revoked or refresh_token.is_revoked:
-      error_message = "Error: Attempt to use a revoked token"
-      logging.error(error_message)
-      raise ValueError(error_message)
+      raise HTTPException(status_code=400, detail="Error: Attempt to use a revoked token")
 
     # check that both access and refresh token user_id is match
     if access_token.user_id != refresh_token.user_id:
-      error_message = "Error: Token session mismatch"
-      logging.error(error_message)
-      raise ValueError(error_message)
+      raise HTTPException(status_code=400, detail="Error: Token session mismatch")
 
     if access_token.family_id != refresh_token.family_id:
-      error_message = "Error: Token pair mismatch"
-      logging.error(error_message)
-      raise ValueError(error_message)
+      raise HTTPException(status_code=400, detail="Error: Token pair mismatch")
 
     db_user = user_service.get_user({"id": access_token.user_id})
 
     if db_user is None:
-      error_message = "Error: User not found"
-      logging.error(error_message)
-      raise ValueError(error_message)
+      raise HTTPException(status_code=400, detail="Error: User not found")
 
     new_token = self.create_auth_tokens(
       TokenAudience(id=access_token.user_id, uuid=db_user.uuid)
     )
     self.repository.revoke_tokens([access_token.token, refresh_token.token])
+
+    self.repository.db.flush()
 
     return new_token
 
@@ -188,7 +168,7 @@ class TokenService:
     """
 
     if audience is None:
-      raise ValueError("Error: Audience cannot be None")
+      raise HTTPException(status_code=400, detail="Error: Audience cannot be None")
 
     validated_audience = TokenAudience.model_validate(audience)
 
@@ -212,6 +192,8 @@ class TokenService:
         ]
       ]
     )
+
+    self.repository.db.flush()
 
     return TokenResponse(
       access_token=access_token.token,
