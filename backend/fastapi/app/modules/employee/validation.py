@@ -7,6 +7,7 @@ from app.modules.user.validation import (
   CreateUser,
   UserBaseResponse,
   UserInternalResponse,
+  UserTypeEnum,
 )
 
 
@@ -65,6 +66,7 @@ class EmployeeResponse(UserBaseResponse):
 
 
 class CreateEmployee(CreateUser):
+  user_type: UserTypeEnum = Field(default=UserTypeEnum.EMPLOYEE)
   department: DepartmentEnum = Field(default=DepartmentEnum.ADMISSIONS)
   role: EmployeeRoleEnum = Field(default=EmployeeRoleEnum.TEACHING_STAFF)
   date_hired: date | None = None

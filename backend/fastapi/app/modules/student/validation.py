@@ -32,7 +32,7 @@ class StudentFullResponse(UserInternalResponse):
 class StudentResponse(UserBaseResponse):
   """Student details"""
 
-  student_number: str
+  student_id: str
   year_level: int
   academic_status: StudentAcademicStatusEnum
 
