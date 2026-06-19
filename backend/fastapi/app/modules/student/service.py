@@ -11,8 +11,8 @@ class StudentService:
   def create(self, student: CreateStudent) -> StudentFullResponse:
     """Create a new student record in the database with hashed password."""
 
-    hashed_pwd = hash_password(student.password)
-    updated_student = student.model_copy(update={"password": hashed_pwd})
+    hash_pwd = hash_password(student.password)
+    updated_student = student.model_copy(update={"password": hash_pwd})
 
     new_student = self.repository.create(updated_student)
 

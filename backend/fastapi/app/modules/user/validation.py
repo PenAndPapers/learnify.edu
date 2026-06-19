@@ -1,13 +1,22 @@
 from datetime import date, datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+from app.helpers.validators.date import is_birth_date_valid_to_register
+from app.helpers.validators.string import is_valid_phone_number
 
 
 class UserTypeEnum(StrEnum):
   ENROLLEE = "ENROLLEE"
   STUDENT = "STUDENT"
   EMPLOYEE = "EMPLOYEE"
+
+
+class GenderEnum(StrEnum):
+  MALE = "MALE"
+  FEMALE = "FEMALE"
+  OTHER = "OTHER"
 
 
 class UserBaseResponse(BaseModel):
@@ -46,11 +55,29 @@ class CreateUser(BaseModel):
 
   email: EmailStr
   password: str = Field(..., min_length=8)
-  first_name: str | None = Field(default=None, max_length=100)
-  last_name: str | None = Field(default=None, max_length=100)
-  phone_number: str | None = Field(default=None, max_length=50)
-  gender: str | None = Field(default=None, max_length=50)
+  first_name: str = Field(..., min_length=1, max_length=100)
+  last_name: str = Field(..., min_length=1, max_length=100)
+  phone_number: str = Field(..., min_length=1, max_length=50)
+  address: str = Field(..., min_length=1, max_length=250)
+  gender: GenderEnum | None = None
   date_of_birth: date | None = None
-  address: str | None = Field(default=None, max_length=250)
-  is_verified: bool = Field(default=False)
-  user_type: UserTypeEnum | None = Field(default=None)
+  user_type: UserTypeEnum | None = None
+  is_verified: bool = False
+
+  @field_validator("date_of_birth")
+  @classmethod
+  def validate_date_of_birth(cls, value: date | None) -> date | None:
+    if not is_birth_date_valid_to_register(value):
+      raise ValueError(
+        "Invalid date of birth. User must be at least 10 years old and the date of birth cannot be in the future or before January 1, 1900."
+      )
+    return value
+
+  @field_validator("phone_number")
+  @classmethod
+  def validate_phone_number(cls, value: str) -> str:
+    if not is_valid_phone_number(value):
+      raise ValueError(
+        "Invalid phone number format. Accepted special characters are +, -, (, ), and space. The phone number must contain at least 7 digits and can start with a + for country code."
+      )
+    return value

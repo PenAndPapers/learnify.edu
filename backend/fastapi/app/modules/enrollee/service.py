@@ -1,4 +1,5 @@
-from app.modules.user.validation import UserInternalResponse, UserTypeEnum
+from app.helpers.security import hash_password
+from app.modules.user.validation import UserInternalResponse
 
 from .repository import EnrolleeResitory
 from .validation import CreateEnrollee, EnrolleeApplicationStatusEnum
@@ -11,9 +12,11 @@ class EnrolleeService:
   def create(self, enrollee: CreateEnrollee) -> UserInternalResponse:
     """Create a new enrollee application record in the database with default values for application status, user type, and verification status."""
 
+    hash_pwd = hash_password(enrollee.password)
+
     enrollee_data = enrollee.model_copy(update={
+      "password": hash_pwd,
       "application_status": EnrolleeApplicationStatusEnum.REGISTERED,
-      "user_type": UserTypeEnum.ENROLLEE,
       "is_verified": False,
     })
     new_enrollee = self.repository.create(enrollee_data)

@@ -1,3 +1,6 @@
+
+from app.helpers.security.password import hash_password
+
 from .repository import EmpoyeeResitory
 from .validation import CreateEmployee, EmployeeFullResponse
 
@@ -9,7 +12,10 @@ class EmployeeService:
   def create(self, employee: CreateEmployee) -> EmployeeFullResponse:
     """Create an employee account."""
 
-    new_employee = self.repository.create(employee)
+    hash_pwd = hash_password(employee.password)
+
+    employee_data = employee.model_copy(update={"password": hash_pwd})
+    new_employee = self.repository.create(employee_data)
 
     self.repository.db.flush()
 
