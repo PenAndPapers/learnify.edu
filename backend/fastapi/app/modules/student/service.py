@@ -1,3 +1,5 @@
+from app.helpers.security import hash_password
+
 from .repository import StudentResitory
 from .validation import CreateStudent, StudentFullResponse
 
@@ -7,9 +9,12 @@ class StudentService:
     self.repository = repository
 
   def create(self, student: CreateStudent) -> StudentFullResponse:
-    validated_student = CreateStudent.model_validate(student)
+    """Create a new student record in the database with hashed password."""
 
-    new_student = self.repository.create(validated_student)
+    hashed_pwd = hash_password(student.password)
+    updated_student = student.model_copy(update={"password": hashed_pwd})
+
+    new_student = self.repository.create(updated_student)
 
     self.repository.db.flush()
 

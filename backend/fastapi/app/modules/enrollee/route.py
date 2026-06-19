@@ -1,11 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from app.modules.authentication.dependency import get_token_service
-from app.modules.authentication.service import TokenService
+from app.modules.authentication.dependency import TokenServiceDep
 from app.modules.authentication.validation import TokenAudience, TokenResponse
 
-from .dependency import get_enrolle_service
-from .service import EnrolleeService
+from .dependency import EnrolleeServiceDep
 from .validation import CreateEnrollee
 
 router = APIRouter(prefix="/api/v1", tags=["Enrollee"])
@@ -14,8 +12,8 @@ router = APIRouter(prefix="/api/v1", tags=["Enrollee"])
 @router.post("/enrolle/application/register", response_model=TokenResponse)
 def student_application_register(
   enrrollee: CreateEnrollee,
-  enrolle_service: EnrolleeService = Depends(get_enrolle_service),
-  token_service: TokenService = Depends(get_token_service),
+  enrolle_service: EnrolleeServiceDep,
+  token_service: TokenServiceDep,
 ) -> TokenResponse:
   new_enrollee = enrolle_service.create(enrrollee)
 

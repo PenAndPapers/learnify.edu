@@ -1,14 +1,13 @@
-import logging
 import uuid
 
-from sqlalchemy.orm import Session
+from app.database import DatabaseDep
 
 from .table import EmployeeTable
 from .validation import CreateEmployee, EmployeeFullResponse
 
 
 class EmpoyeeResitory:
-  def __init__(self, db: Session):
+  def __init__(self, db: DatabaseDep):
     self.db = db
     self.model = EmployeeTable
 
@@ -17,7 +16,7 @@ class EmpoyeeResitory:
 
   def create(self, employee: CreateEmployee) -> EmployeeFullResponse:
     """Store employee details in the database"""
-    
+
     record = self.model(
       employee_id=self._employee_id_generator(), **employee.model_dump()
     )

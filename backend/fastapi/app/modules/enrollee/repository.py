@@ -1,8 +1,6 @@
-import logging
-
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
 
+from app.database import DatabaseDep
 from app.modules.user.validation import UserInternalResponse
 
 from .table import EnrolleeTable
@@ -10,7 +8,7 @@ from .validation import CreateEnrollee
 
 
 class EnrolleeResitory:
-  def __init__(self, db: Session):
+  def __init__(self, db: DatabaseDep):
     self.db = db
     self.model = EnrolleeTable
 
@@ -18,7 +16,7 @@ class EnrolleeResitory:
     """Store user info"""
     record = self.model(**data.model_dump())
     self.db.add(record)
-    
+
     return record
 
   def get_enrollee(

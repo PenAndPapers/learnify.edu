@@ -1,12 +1,13 @@
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+
+from app.database import DatabaseDep
 
 from .table import UserTable
 from .validation import UserInternalResponse
 
 
 class UserRepository:
-  def __init__(self, db: Session):
+  def __init__(self, db: DatabaseDep):
     self.db = db
     self.model = UserTable
 

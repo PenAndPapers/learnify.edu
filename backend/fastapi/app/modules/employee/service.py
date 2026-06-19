@@ -6,7 +6,6 @@ class EmployeeService:
   def __init__(self, repository: EmpoyeeResitory):
     self.repository = repository
 
-
   def create(self, employee: CreateEmployee) -> EmployeeFullResponse:
     validated_employee = CreateEmployee.model_validate(employee)
 

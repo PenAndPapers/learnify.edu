@@ -1,7 +1,6 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
-from .dependency import get_student_service
-from .service import StudentService
+from .dependency import StudentServiceDep
 from .validation import CreateStudent, StudentResponse
 
 router = APIRouter(prefix="/api/v1", tags=["Student"])
@@ -21,7 +20,7 @@ def login_student() -> None:
 
 @router.post("/student/create", response_model=StudentResponse)
 def create_student(
-  student: CreateStudent, student_service: StudentService = Depends(get_student_service)
+  student: CreateStudent, student_service: StudentServiceDep
 ) -> StudentResponse:
   """Create student account"""
   new_student = student_service.create(student)

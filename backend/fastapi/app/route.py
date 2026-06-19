@@ -1,8 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, HTTPException, Request, status
 from sqlalchemy import text
-from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import DatabaseDep
 
 # Utils
 from app.utils.email.email import send_welcome_email
@@ -18,7 +17,7 @@ def root():
 @router.get("/check-health")
 async def application_health_check(
   request: Request,
-  db: Session = Depends(get_db),
+  db: DatabaseDep,
 ) -> dict[str, str]:
   try:
     # Use text() for raw SQL
@@ -35,8 +34,17 @@ async def application_health_check(
 
 
 @router.get("/check-database")
-def check_database(db: Session = Depends(get_db)) -> dict[str, str]:
-  return {"message": "Database connection successful"}
+def check_database(db: DatabaseDep) -> dict[str, str]:
+  try:
+    # Use text() for raw SQL
+    db.execute(text("SELECT 1"))
+
+    return {"message": "Database connection successful"}
+  except Exception as e:
+    raise HTTPException(
+      status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+      detail={"status": "unhealthy", "error": str(e)},
+    ) from None
 
 
 @router.get("/check-redis")

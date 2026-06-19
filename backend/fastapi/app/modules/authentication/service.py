@@ -1,11 +1,11 @@
-import logging
 import uuid
 from datetime import UTC, datetime, timedelta
-from fastapi import HTTPException
 
 import jwt
+from fastapi import HTTPException
 
-from app.core.config import get_app_config, get_security_config
+from app.core.config import AppConfig, SecurityConfig
+from app.helpers.validators import is_valid_jwt_token_format
 from app.modules.user.service import UserService
 
 from .repository import TokenRepository
@@ -21,16 +21,15 @@ from .validation import (
 
 
 class TokenService:
-  def __init__(self, repository: TokenRepository):
-    security_config = get_security_config()
-
+  def __init__(
+    self,
+    app_config: AppConfig,
+    security_config: SecurityConfig,
+    repository: TokenRepository,
+  ):
+    self.app_config = app_config
+    self.security_config = security_config
     self.repository = repository
-
-    self.app_config = get_app_config()
-    self.secret_key = security_config.secret_key
-    self.algorithm = security_config.algorithm
-    self.access_token_expires_min = security_config.access_token_expire_minutes
-    self.refresh_token_expire_days = security_config.refresh_token_expire_days
 
   def _generate(
     self, audience: TokenAudience, jti: str, token_type: TokenTypeEnum
@@ -44,7 +43,10 @@ class TokenService:
     """
 
     if not isinstance(token_type, TokenTypeEnum):
-      raise HTTPException(status_code=400, detail="Error: Invalid or missing token type. Token generation is aborted!")
+      raise HTTPException(
+        status_code=400,
+        detail="Error: Invalid or missing token type. Token generation is aborted!",
+      )
 
     now = datetime.now(UTC)
     claims = {
@@ -57,15 +59,24 @@ class TokenService:
 
     match token_type:
       case TokenTypeEnum.ACCESS:
-        expires_at = now + timedelta(minutes=self.access_token_expires_min)
+        expires_at = now + timedelta(
+          minutes=self.security_config.access_token_expire_minutes
+        )
       case TokenTypeEnum.REFRESH:
-        expires_at = now + timedelta(days=self.refresh_token_expire_days)
+        expires_at = now + timedelta(
+          days=self.security_config.refresh_token_expire_days
+        )
       case _:
-        raise HTTPException(status_code=400, detail="Error: Unhandled token type. Token generation is aborted!")
+        raise HTTPException(
+          status_code=400,
+          detail="Error: Unhandled token type. Token generation is aborted!",
+        )
 
     claims["exp"] = expires_at.timestamp()
 
-    token = jwt.encode(claims, self.secret_key, algorithm=self.algorithm)
+    token = jwt.encode(
+      claims, self.security_config.secret_key, algorithm=self.security_config.algorithm
+    )
 
     return Token(token=token, expires_at=expires_at)
 
@@ -79,8 +90,8 @@ class TokenService:
     try:
       payload = jwt.decode(
         token.token,
-        self.secret_key,
-        algorithms=[self.algorithm],
+        self.security_config.secret_key,
+        algorithms=[self.security_config.algorithm],
         options={"verify_aud": False},
       )
 
@@ -98,7 +109,9 @@ class TokenService:
       raise HTTPException(status_code=400, detail="Error: Token is expired") from e
 
     except jwt.InvalidTokenError as e:
-      raise HTTPException(status_code=400, detail="Error: Token signature is invalid") from e
+      raise HTTPException(
+        status_code=400, detail="Error: Token signature is invalid"
+      ) from e
 
   def refresh_token(
     self, token: TokenRefreshRequest, user_service: UserService
@@ -107,7 +120,9 @@ class TokenService:
     Refresh user token
     """
 
-    if token is None:
+    if not is_valid_jwt_token_format(
+      token.access_token
+    ) or not is_valid_jwt_token_format(token.refresh_token):
       raise HTTPException(status_code=400, detail="Error: Token is not valid")
 
     validated_token = TokenRefreshRequest.model_validate(token)
@@ -135,7 +150,9 @@ class TokenService:
 
     # check that token are not revoked before creating a new one
     if access_token.is_revoked or refresh_token.is_revoked:
-      raise HTTPException(status_code=400, detail="Error: Attempt to use a revoked token")
+      raise HTTPException(
+        status_code=400, detail="Error: Attempt to use a revoked token"
+      )
 
     # check that both access and refresh token user_id is match
     if access_token.user_id != refresh_token.user_id:
@@ -152,8 +169,8 @@ class TokenService:
     new_token = self.create_auth_tokens(
       TokenAudience(id=access_token.user_id, uuid=db_user.uuid)
     )
-    self.repository.revoke_tokens([access_token.token, refresh_token.token])
 
+    self.repository.revoke_tokens([access_token.token, refresh_token.token])
     self.repository.db.flush()
 
     return new_token
@@ -177,7 +194,7 @@ class TokenService:
     access_token = self._generate(validated_audience, jti, TokenTypeEnum.ACCESS)
     refresh_token = self._generate(validated_audience, jti, TokenTypeEnum.REFRESH)
 
-    self.repository.store_auth_tokens(
+    self.repository.create(
       [
         UserToken(
           **token_obj.model_dump(),

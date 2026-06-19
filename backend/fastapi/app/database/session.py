@@ -1,7 +1,9 @@
 import logging
+from typing import Annotated
 
+from fastapi import Depends
 from sqlalchemy import create_engine
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import Session, declarative_base, sessionmaker
 
 from app.core.config import get_database_url
 
@@ -16,7 +18,7 @@ engine = create_engine(
   pool_timeout=30,
   pool_recycle=1800,
   pool_pre_ping=True,
-  pool_use_lifo=True
+  pool_use_lifo=True,
 )
 
 # Create SessionLocal class
@@ -43,3 +45,7 @@ def get_db():
   finally:
     logger.debug("Database connection is closed.")
     db.close()
+
+
+# Package-level dependency for FastAPI dependency injection
+DatabaseDep = Annotated[Session, Depends(get_db)]

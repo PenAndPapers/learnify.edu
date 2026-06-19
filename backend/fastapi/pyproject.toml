@@ -47,7 +47,7 @@ lint.select = [
     "ASYNC", # flake8-async (catches common asynchronous design pitfalls)
 ]
 lint.ignore = ["E501"]
-lint.extend-fixable = ["E302"]
+lint.extend-fixable = ["E302", "W", "E"]
 
 [tool.ruff.format]
 quote-style = "double"

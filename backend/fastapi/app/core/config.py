@@ -1,3 +1,6 @@
+from typing import Annotated
+
+from fastapi import Depends
 from pydantic import BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -131,3 +134,10 @@ def get_smtp_config() -> SMTPConfig:
     from_email=env_config.emails_from_email,
     from_name=env_config.emails_from_name,
   )
+
+
+# Package-level dependencies for FastAPI dependency injection
+AppConfigDep = Annotated[AppConfig, Depends(get_app_config)]
+SecurityConfigDep = Annotated[SecurityConfig, Depends(get_security_config)]
+DatabaseConfigDep = Annotated[DatabaseConfig, Depends(get_database_config())]
+SMTPConfigDep = Annotated[SMTPConfig, Depends(get_smtp_config)]

@@ -1,4 +1,3 @@
-import logging
 from datetime import UTC, datetime
 
 from fastapi import HTTPException
@@ -14,7 +13,7 @@ class TokenRepository:
     self.db = db
     self.model = TokenTable
 
-  def store_auth_tokens(self, tokens: list[UserToken]) -> list[UserToken]:
+  def create(self, tokens: list[UserToken]) -> list[UserToken]:
     """Store authentication tokens in the database"""
 
     records = [self.model(**token.model_dump()) for token in tokens]
@@ -36,7 +35,10 @@ class TokenRepository:
 
   def get_by_tokens(self, tokens: list[str] | None = None) -> list[UserToken] | None:
     if tokens is None:
-      raise HTTPException(status_code=400, detail="Error: Invalid set of tokens. Provide at least one token.")
+      raise HTTPException(
+        status_code=400,
+        detail="Error: Invalid set of tokens. Provide at least one token.",
+      )
 
     try:
       query = (
@@ -47,7 +49,9 @@ class TokenRepository:
       db_tokens = self.db.scalars(query).all()
 
       if not db_tokens or len(db_tokens) != len(tokens):
-        raise HTTPException(status_code=404, detail="Error: One or more tokens not found")
+        raise HTTPException(
+          status_code=404, detail="Error: One or more tokens not found"
+        )
 
       return [UserToken.model_validate(token) for token in db_tokens]
     except Exception as e:
@@ -62,7 +66,3 @@ class TokenRepository:
       .where(self.model.token.in_(tokens))
       .values(is_revoked=True, deleted_at=datetime.now(UTC))
     )
-
-
-
-    

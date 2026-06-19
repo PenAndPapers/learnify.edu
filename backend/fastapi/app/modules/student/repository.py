@@ -1,13 +1,13 @@
 import uuid
 
-from sqlalchemy.orm import Session
+from app.database import DatabaseDep
 
 from .table import StudentTable
 from .validation import CreateStudent, StudentFullResponse
 
 
 class StudentResitory:
-  def __init__(self, db: Session):
+  def __init__(self, db: DatabaseDep):
     self.db = db
     self.model = StudentTable
 
@@ -17,10 +17,7 @@ class StudentResitory:
   def create(self, student: CreateStudent) -> StudentFullResponse:
     """Store student information in the database"""
 
-    record = self.model(
-      student_id=self._student_id_generator(), **student.model_dump()
-    )
+    record = self.model(student_id=self._student_id_generator(), **student.model_dump())
     self.db.add(record)
 
     return record
-

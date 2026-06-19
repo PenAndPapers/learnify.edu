@@ -12,7 +12,8 @@ class EnrolleeTable(UserTable):
   id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), primary_key=True)
 
   application_status: Mapped[EnrolleeApplicationStatusEnum] = mapped_column(
-    Enum(EnrolleeApplicationStatusEnum), default=EnrolleeApplicationStatusEnum.REGISTERED
+    Enum(EnrolleeApplicationStatusEnum),
+    default=EnrolleeApplicationStatusEnum.REGISTERED,
   )
   chosen_course: Mapped[str | None] = mapped_column(String)
   previous_school: Mapped[str | None] = mapped_column(String)

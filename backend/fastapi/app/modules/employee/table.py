@@ -14,8 +14,12 @@ class EmployeeTable(UserTable):
   id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), primary_key=True)
 
   employee_id: Mapped[str] = mapped_column(String, unique=True)
-  department: Mapped[DepartmentEnum] = mapped_column(Enum(DepartmentEnum), default=DepartmentEnum.ADMISSIONS)
-  role: Mapped[EmployeeRoleEnum] = mapped_column(Enum(EmployeeRoleEnum), default=EmployeeRoleEnum.TEACHING_STAFF)
+  department: Mapped[DepartmentEnum] = mapped_column(
+    Enum(DepartmentEnum), default=DepartmentEnum.ADMISSIONS
+  )
+  role: Mapped[EmployeeRoleEnum] = mapped_column(
+    Enum(EmployeeRoleEnum), default=EmployeeRoleEnum.TEACHING_STAFF
+  )
 
   date_hired: Mapped[date | None] = mapped_column(Date)
   is_active: Mapped[bool] = mapped_column(Boolean, default=True)
