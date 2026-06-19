@@ -3,22 +3,22 @@ from fastapi import APIRouter
 from .dependency import EmployeeServiceDep
 from .validation import CreateEmployee, EmployeeResponse
 
-router = APIRouter(prefix="/api/v1", tags=["Employee"])
+router = APIRouter(prefix="/api/v1/employee", tags=["Employee"])
 
 
-@router.get("/employee/all", response_model=None)
+@router.get("/", response_model=None)
 def get_employees() -> None:
   """Get all employee list"""
   pass
 
 
-@router.post("/employee/login", response_model=None)
+@router.post("/login", response_model=None)
 def login_employee() -> None:
   """Login an employee account"""
   pass
 
 
-@router.post("/employee/create", response_model=EmployeeResponse)
+@router.post("/", response_model=EmployeeResponse)
 def create_employee(
   employee: CreateEmployee,
   employee_service: EmployeeServiceDep,
@@ -29,19 +29,19 @@ def create_employee(
   return EmployeeResponse.model_validate(new_employee)
 
 
-@router.get("/employee/{uuid}", response_model=None)
+@router.get("/{uuid}", response_model=None)
 def get_employee() -> None:
   """Get an employee account"""
   pass
 
 
-@router.patch("/employee/{uuid}", response_model=None)
+@router.patch("/{uuid}", response_model=None)
 def update_employee() -> None:
   """Update an employee account"""
   pass
 
 
-@router.delete("/employee/{uuid}", response_model=None)
+@router.delete("/{uuid}", response_model=None)
 def delete_employee() -> None:
   """Delete an employee account"""
   pass

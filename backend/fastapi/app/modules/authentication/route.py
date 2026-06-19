@@ -5,10 +5,10 @@ from app.modules.user.dependency import UserServiceDep
 from .dependency import TokenServiceDep
 from .validation import TokenRefreshRequest, TokenResponse, TokenValidateRequest
 
-router = APIRouter(prefix="/api/v1/authentication", tags=["Authentication"])
+router = APIRouter(prefix="/api/v1/authentication/token", tags=["Authentication"])
 
 
-@router.post("/token/refresh", response_model=TokenResponse)
+@router.post("/refresh", response_model=TokenResponse)
 def refresh_token(
   token: TokenRefreshRequest,
   token_service: TokenServiceDep,
@@ -19,7 +19,7 @@ def refresh_token(
   return token
 
 
-@router.post("/token/validate", response_model=bool)
+@router.post("/validate", response_model=bool)
 def validate_token(token: TokenValidateRequest, token_service: TokenServiceDep) -> bool:
   token = token_service.validate_token(token)
 
