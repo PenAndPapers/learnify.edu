@@ -34,13 +34,7 @@ class TokenService:
   def _generate(
     self, audience: TokenAudience, jti: str, token_type: TokenTypeEnum
   ) -> Token:
-    """Generates a token
-    Params:
-      audience: the audience (user details)
-      token_type: the type of token to be generated
-    Returns:
-      Token: object containing the token string and expiration time
-    """
+    """Generates a JWT token with the given audience, jti, and token type."""
 
     if not isinstance(token_type, TokenTypeEnum):
       raise HTTPException(
@@ -81,11 +75,7 @@ class TokenService:
     return Token(token=token, expires_at=expires_at)
 
   def validate_token(self, token: TokenValidateRequest) -> UserToken | None:
-    """Validates a token by cheking the database if data exist and token is not revoked
-    Args:
-      token: the token string
-      token_type: the type of token
-    """
+    """Validates the given JWT token and returns the corresponding UserToken from the database if valid."""
 
     try:
       payload = jwt.decode(
@@ -116,9 +106,7 @@ class TokenService:
   def refresh_token(
     self, token: TokenRefreshRequest, user_service: UserService
   ) -> TokenResponse:
-    """
-    Refresh user token
-    """
+    """Refereshes the given access and refresh tokens and returns new tokens if valid."""
 
     if not is_valid_jwt_token_format(
       token.access_token
@@ -176,13 +164,7 @@ class TokenService:
     return new_token
 
   def create_auth_tokens(self, audience: TokenAudience) -> TokenResponse:
-    """
-    Create access and refresh token and store them in database
-    Args:
-      audience: the audience (user details)
-    Returns:
-      TokenResponse: contains the access and refresh token and expiration time of access token
-    """
+    """Creates a new pair of access and refresh tokens for the given audience and stores them in the database."""
 
     if audience is None:
       raise HTTPException(status_code=400, detail="Error: Audience cannot be None")

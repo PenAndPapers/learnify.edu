@@ -7,9 +7,9 @@ class EmployeeService:
     self.repository = repository
 
   def create(self, employee: CreateEmployee) -> EmployeeFullResponse:
-    validated_employee = CreateEmployee.model_validate(employee)
+    """Create an employee account."""
 
-    new_employee = self.repository.create(validated_employee)
+    new_employee = self.repository.create(employee)
 
     self.repository.db.flush()
 

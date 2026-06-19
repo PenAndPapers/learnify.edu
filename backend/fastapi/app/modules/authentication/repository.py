@@ -23,6 +23,8 @@ class TokenRepository:
     return records
 
   def get_by_token(self, token: str) -> UserToken | None:
+    """Get a token record from the database by token string"""
+
     if not token:
       raise HTTPException(status_code=400, detail="Error: Token is required")
 
@@ -34,6 +36,7 @@ class TokenRepository:
     return UserToken.model_validate(db_token)
 
   def get_by_tokens(self, tokens: list[str] | None = None) -> list[UserToken] | None:
+    """Get multiple token records from the database by a list of token strings"""
     if tokens is None:
       raise HTTPException(
         status_code=400,

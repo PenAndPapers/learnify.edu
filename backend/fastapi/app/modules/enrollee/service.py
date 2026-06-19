@@ -9,26 +9,19 @@ class EnrolleeService:
     self.repository = repository
 
   def create(self, enrollee: CreateEnrollee) -> UserInternalResponse:
-    converted_data = CreateEnrollee(
-      email=enrollee.email,
-      password=enrollee.password,
-      first_name=enrollee.first_name,
-      last_name=enrollee.last_name,
-      phone_number=enrollee.phone_number,
-      gender=enrollee.gender,
-      date_of_birth=enrollee.date_of_birth,
-      address=enrollee.address,
-      chosen_course=enrollee.chosen_course,
-      previous_school=enrollee.previous_school,
-      application_status=EnrolleeApplicationStatusEnum.REGISTERED,
-      user_type=UserTypeEnum.ENROLLEE,
-      is_verified=False,
-    )
-    new_enrollee = self.repository.create(converted_data)
+    """Create a new enrollee application record in the database with default values for application status, user type, and verification status."""
+
+    enrollee_data = enrollee.model_copy(update={
+      "application_status": EnrolleeApplicationStatusEnum.REGISTERED,
+      "user_type": UserTypeEnum.ENROLLEE,
+      "is_verified": False,
+    })
+    new_enrollee = self.repository.create(enrollee_data)
 
     self.repository.db.flush()
 
     return new_enrollee
 
   def get_enrollee(self, filter: dict) -> UserInternalResponse | None:
+    """Get an enrollee by filter."""
     return self.repository.get_enrollee(filter, False)
