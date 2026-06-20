@@ -4,12 +4,28 @@ from enum import StrEnum
 from pydantic import BaseModel, Field
 
 
+
 class TokenTypeEnum(StrEnum):
   EMAIL_VERIFICATION = "EMAIL_VERIFICATION"
   PASSWORD_RESET = "PASSWORD_RESET"
   ACCESS = "ACCESS"
   BEARER = "BEARER"
   REFRESH = "REFRESH"
+
+
+class JWTInputParams(BaseModel):
+  jti: str
+  aud: str
+  type: TokenTypeEnum
+  
+
+class JWTClaims(BaseModel):
+    iss: str
+    iat: float
+    jti: str
+    aud: str
+    type: str
+    exp: datetime
 
 
 class Token(BaseModel):

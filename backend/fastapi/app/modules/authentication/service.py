@@ -5,11 +5,13 @@ import jwt
 from fastapi import HTTPException
 
 from app.core.config import AppConfig, SecurityConfig
+from app.helpers.security.jwt import decode_jwt, encode_jwt, get_jwt_claims, get_jwt_expiration, get_token_family_id
 from app.helpers.validators import is_valid_jwt_token_format
 from app.modules.user.service import UserService
 
 from .repository import TokenRepository
 from .validation import (
+  JWTInputParams,
   Token,
   TokenAudience,
   TokenRefreshRequest,
@@ -31,8 +33,8 @@ class TokenService:
     self.security_config = security_config
     self.repository = repository
 
-  def _generate(
-    self, audience: TokenAudience, jti: str, token_type: TokenTypeEnum
+  def generate(
+    self, audience: TokenAudience, token_type: TokenTypeEnum
   ) -> Token:
     """Generates a JWT token with the given audience, jti, and token type."""
 
@@ -41,49 +43,23 @@ class TokenService:
         status_code=400,
         detail="Error: Invalid or missing token type. Token generation is aborted!",
       )
-
-    now = datetime.now(UTC)
-    claims = {
-      "iat": now.timestamp(),
-      "jti": jti,
-      "iss": self.app_config.name,
-      "aud": str(audience.uuid),
-      "type": token_type.value,
-    }
-
-    match token_type:
-      case TokenTypeEnum.ACCESS:
-        expires_at = now + timedelta(
-          minutes=self.security_config.access_token_expire_minutes
-        )
-      case TokenTypeEnum.REFRESH:
-        expires_at = now + timedelta(
-          days=self.security_config.refresh_token_expire_days
-        )
-      case _:
-        raise HTTPException(
-          status_code=400,
-          detail="Error: Unhandled token type. Token generation is aborted!",
-        )
-
-    claims["exp"] = expires_at.timestamp()
-
-    token = jwt.encode(
-      claims, self.security_config.secret_key, algorithm=self.security_config.algorithm
+    
+    jwt_params = JWTInputParams(
+      jti = get_token_family_id(),
+      aud = str(audience.uuid),
+      type = token_type.value
     )
 
-    return Token(token=token, expires_at=expires_at)
+    claims = get_jwt_claims(jwt_params)
+    token = encode_jwt(claims)
+
+    return Token(token=token, expires_at=claims.exp)
 
   def validate_token(self, token: TokenValidateRequest) -> UserToken | None:
     """Validates the given JWT token and returns the corresponding UserToken from the database if valid."""
 
     try:
-      payload = jwt.decode(
-        token.token,
-        self.security_config.secret_key,
-        algorithms=[self.security_config.algorithm],
-        options={"verify_aud": False},
-      )
+      payload = decode_jwt(token.token)
 
       if payload.get("type") != token.token_type:
         raise HTTPException(status_code=400, detail="Error: Token type mismatch")
@@ -146,6 +122,7 @@ class TokenService:
     if access_token.user_id != refresh_token.user_id:
       raise HTTPException(status_code=400, detail="Error: Token session mismatch")
 
+    # check that both access and refresh token family_id is match
     if access_token.family_id != refresh_token.family_id:
       raise HTTPException(status_code=400, detail="Error: Token pair mismatch")
 
@@ -169,21 +146,21 @@ class TokenService:
     if audience is None:
       raise HTTPException(status_code=400, detail="Error: Audience cannot be None")
 
-    validated_audience = TokenAudience.model_validate(audience)
+    access_token = self.generate(audience, TokenTypeEnum.ACCESS)
+    refresh_token = self.generate(audience, TokenTypeEnum.REFRESH)
 
-    jti = str(uuid.uuid4())
+    print(access_token)
 
-    access_token = self._generate(validated_audience, jti, TokenTypeEnum.ACCESS)
-    refresh_token = self._generate(validated_audience, jti, TokenTypeEnum.REFRESH)
+    print()
 
     self.repository.create(
       [
         UserToken(
           **token_obj.model_dump(),
-          user_id=validated_audience.id,
+          user_id=audience.id,
           is_revoked=False,
           token_type=token_type,
-          family_id=jti,
+          family_id=decode_jwt(token_obj.token).get("jti")
         )
         for token_obj, token_type in [
           (access_token, TokenTypeEnum.ACCESS),
