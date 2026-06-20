@@ -58,7 +58,7 @@ class TokenRepository:
 
       return [UserToken.model_validate(token) for token in db_tokens]
     except Exception as e:
-      raise HTTPException(status_code=500, detail="Error: Failed to fetch token") from e
+      raise HTTPException(status_code=500, detail="Error: Token is not valid") from e
 
   def revoke_tokens(self, tokens: list[str] | None = None) -> None:
     if tokens is None or len(tokens) != 2:

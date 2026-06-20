@@ -1,11 +1,14 @@
-import uuid
-from datetime import UTC, datetime, timedelta
 
 import jwt
 from fastapi import HTTPException
 
 from app.core.config import AppConfig, SecurityConfig
-from app.helpers.security.jwt import decode_jwt, encode_jwt, get_jwt_claims, get_jwt_expiration, get_token_family_id
+from app.helpers.security.jwt import (
+  decode_jwt,
+  encode_jwt,
+  get_jwt_claims,
+  get_token_family_id,
+)
 from app.helpers.validators import is_valid_jwt_token_format
 from app.modules.user.service import UserService
 
@@ -33,24 +36,16 @@ class TokenService:
     self.security_config = security_config
     self.repository = repository
 
-  def generate(
-    self, audience: TokenAudience, token_type: TokenTypeEnum
-  ) -> Token:
+  def generate(self, payload: JWTInputParams) -> Token:
     """Generates a JWT token with the given audience, jti, and token type."""
 
-    if not isinstance(token_type, TokenTypeEnum):
+    if not isinstance(payload.type, TokenTypeEnum):
       raise HTTPException(
         status_code=400,
         detail="Error: Invalid or missing token type. Token generation is aborted!",
       )
-    
-    jwt_params = JWTInputParams(
-      jti = get_token_family_id(),
-      aud = str(audience.uuid),
-      type = token_type.value
-    )
 
-    claims = get_jwt_claims(jwt_params)
+    claims = get_jwt_claims(payload)
     token = encode_jwt(claims)
 
     return Token(token=token, expires_at=claims.exp)
@@ -144,14 +139,15 @@ class TokenService:
     """Creates a new pair of access and refresh tokens for the given audience and stores them in the database."""
 
     if audience is None:
-      raise HTTPException(status_code=400, detail="Error: Audience cannot be None")
+      raise HTTPException(status_code=400, detail="Error: Audience cannot be empty")
 
-    access_token = self.generate(audience, TokenTypeEnum.ACCESS)
-    refresh_token = self.generate(audience, TokenTypeEnum.REFRESH)
+    payload = {
+      "jti": get_token_family_id(),
+      "aud": audience.uuid,
+    }
 
-    print(access_token)
-
-    print()
+    access_token = self.generate(JWTInputParams(**payload, type=TokenTypeEnum.ACCESS))
+    refresh_token = self.generate(JWTInputParams(**payload, type=TokenTypeEnum.REFRESH))
 
     self.repository.create(
       [
@@ -160,7 +156,7 @@ class TokenService:
           user_id=audience.id,
           is_revoked=False,
           token_type=token_type,
-          family_id=decode_jwt(token_obj.token).get("jti")
+          family_id=payload["jti"]
         )
         for token_obj, token_type in [
           (access_token, TokenTypeEnum.ACCESS),
