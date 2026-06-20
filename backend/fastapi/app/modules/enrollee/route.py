@@ -28,9 +28,8 @@ def enrollee_application_register(
   new_enrollee = enrolle_service.create(enrrollee)
 
   if new_enrollee:
-    token = token_service.create_auth_tokens(
-      TokenAudience(id=new_enrollee.id, uuid=new_enrollee.uuid)
-    )
+    audience = {"id": new_enrollee.id, "uuid": new_enrollee.uuid}
+    token = token_service.create_auth_tokens(TokenAudience(**audience))
 
   return token
 

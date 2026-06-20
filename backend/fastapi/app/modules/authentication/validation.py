@@ -1,7 +1,9 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+from app.helpers.validators.token import is_valid_jwt_token_format
 
 
 class TokenTypeEnum(StrEnum):
@@ -37,17 +39,6 @@ class TokenAudience(BaseModel):
   uuid: str
 
 
-class UserToken(BaseModel):
-  user_id: int
-  token: str
-  token_type: TokenTypeEnum
-  expires_at: datetime
-  is_revoked: bool
-  family_id: str | None
-
-  model_config = {"from_attributes": True}
-
-
 class TokenResponse(BaseModel):
   access_token: str
   refresh_token: str
@@ -55,10 +46,54 @@ class TokenResponse(BaseModel):
 
 
 class TokenRefreshRequest(BaseModel):
-  access_token: str = Field(default="")
-  refresh_token: str = Field(default="")
+  access_token: str = Field(
+    ..., # ... means the field is strictly REQUIRED
+    min_length=1,
+    description="The expired or current JWT access token.",
+    examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."]
+  )
+  refresh_token: str = Field(
+    ...,
+    min_length=1,
+    description="The valid cryptographically signed refresh token.",
+    examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."]
+  )
+
+  @field_validator("access_token", "refresh_token")
+  @classmethod
+  def validate_token(cls, value: str) -> str:
+    if not is_valid_jwt_token_format(value):
+      raise ValueError("Invalid JWT token format")
+    return value
 
 
 class TokenValidateRequest(BaseModel):
-  token: str = Field(default="")
-  token_type: TokenTypeEnum = Field(default="")
+  token: str = Field(
+    ...,
+    min_length=1,
+    description="The token payload string to evaluate.",
+    examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."],
+  )
+  token_type: TokenTypeEnum = Field(
+    ...,
+    description="The type category of the token being validated.",
+    examples=[TokenTypeEnum.REFRESH.value]
+  )
+
+  @field_validator("token")
+  @classmethod
+  def validate_token(cls, value: str) -> str:
+    if not is_valid_jwt_token_format(value):
+      raise ValueError("Invalid JWT token format")
+    return value
+
+
+class UserToken(BaseModel):
+  user_id: int
+  token: str
+  is_revoked: bool
+  family_id: str
+  token_type: TokenTypeEnum
+  expires_at: datetime
+
+  model_config = {"from_attributes": True}

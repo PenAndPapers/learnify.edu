@@ -53,14 +53,14 @@ class UserInternalResponse(UserBaseResponse):
 class CreateUser(BaseModel):
   """The data required for creating a user"""
 
-  email: EmailStr
-  password: str = Field(..., min_length=8)
-  first_name: str = Field(..., min_length=1, max_length=100)
-  last_name: str = Field(..., min_length=1, max_length=100)
-  phone_number: str = Field(..., min_length=1, max_length=50)
-  address: str = Field(..., min_length=1, max_length=250)
+  email: EmailStr = Field(..., examples=["johnny.smith@email.com"])
+  password: str = Field(..., min_length=8, examples=["P@s$w0rd_"])
+  first_name: str = Field(..., min_length=1, max_length=100, examples=["Johnny"])
+  last_name: str = Field(..., min_length=1, max_length=100, examples=["Smith"])
+  phone_number: str = Field(..., min_length=1, max_length=50, examples=["+123-2342-7890"])
+  address: str = Field(..., min_length=1, max_length=250, examples=["99 Hanson Park 37th Street"])
+  date_of_birth: date | None = Field(..., examples=["2005-10-22"])
   gender: GenderEnum | None = None
-  date_of_birth: date | None = None
   user_type: UserTypeEnum | None = None
   is_verified: bool = False
 
