@@ -148,23 +148,21 @@ class TokenService:
 
     access_token = self.generate(JWTInputParams(**payload, type=TokenTypeEnum.ACCESS))
     refresh_token = self.generate(JWTInputParams(**payload, type=TokenTypeEnum.REFRESH))
-
-    self.repository.create(
-      [
-        UserToken(
-          **token_obj.model_dump(),
-          user_id=audience.id,
-          is_revoked=False,
-          token_type=token_type,
-          family_id=payload["jti"]
-        )
-        for token_obj, token_type in [
-          (access_token, TokenTypeEnum.ACCESS),
-          (refresh_token, TokenTypeEnum.REFRESH),
-        ]
+    tokens = [
+      UserToken(
+        **token_obj.model_dump(),
+        is_revoked=False,
+        user_id=audience.id,
+        token_type=token_type,
+        family_id=payload["jti"]
+      )
+      for token_obj, token_type in [
+        (access_token, TokenTypeEnum.ACCESS),
+        (refresh_token, TokenTypeEnum.REFRESH),
       ]
-    )
+    ]
 
+    self.repository.create(tokens)
     self.repository.db.flush()
 
     return TokenResponse(

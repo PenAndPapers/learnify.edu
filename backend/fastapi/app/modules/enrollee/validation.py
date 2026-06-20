@@ -61,7 +61,7 @@ class EnrolleeResponse(UserBaseResponse):
 
 class CreateEnrollee(CreateUser):
   previous_school: str = Field(..., min_length=2, max_length=150, examples=["Farrell-Shields University"])
-  chosen_course: CoursesEnum = Field(..., description="The course the enrollee is applying for.")
+  chosen_course: CoursesEnum = Field(..., description="The course the enrollee is applying for.", examples=[CoursesEnum.INFORMATION_TECHNOLOGY.value])
   application_status: EnrolleeApplicationStatusEnum = EnrolleeApplicationStatusEnum.REGISTERED
   user_type: UserTypeEnum = UserTypeEnum.ENROLLEE
   is_verified: bool = False

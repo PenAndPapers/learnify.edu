@@ -17,10 +17,10 @@ class TokenRepository:
     """Store authentication tokens in the database"""
 
     records = [self.model(**token.model_dump()) for token in tokens]
-
+    
     self.db.add_all(records)
 
-    return records
+    return [UserToken.model_validate(record) for record in records]
 
   def get_by_token(self, token: str) -> UserToken | None:
     """Get a token record from the database by token string"""
