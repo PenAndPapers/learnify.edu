@@ -1,17 +1,16 @@
 
 import jwt
 
-from app.core.config import AppConfig, SecurityConfig
 from app.helpers.security.jwt import (
   decode_jwt,
   encode_jwt,
   get_jwt_claims,
   get_token_family_id,
 )
-from app.modules.user.exceptions import UserNotFoundError
+from app.modules.user.exception import UserNotFoundError
 from app.modules.user.service import UserService
 
-from .exceptions import (
+from .exception import (
   TokenExpiredError,
   TokenInvalidError,
   TokenPairMismatchError,
@@ -35,12 +34,8 @@ from .validation import (
 class TokenService:
   def __init__(
     self,
-    app_config: AppConfig,
-    security_config: SecurityConfig,
     repository: TokenRepository,
   ):
-    self.app_config = app_config
-    self.security_config = security_config
     self.repository = repository
 
   def generate(self, payload: JWTInputParams) -> Token:
