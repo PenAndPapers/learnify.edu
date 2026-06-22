@@ -1,6 +1,5 @@
 
 import jwt
-from fastapi import HTTPException
 
 from app.core.config import AppConfig, SecurityConfig
 from app.helpers.security.jwt import (
@@ -9,14 +8,16 @@ from app.helpers.security.jwt import (
   get_jwt_claims,
   get_token_family_id,
 )
-from app.helpers.validators import is_valid_jwt_token_format
+from app.modules.user.exceptions import UserNotFoundError
 from app.modules.user.service import UserService
 
 from .exceptions import (
-  TokenInvalidFormatError,
+  TokenExpiredError,
+  TokenInvalidError,
   TokenPairMismatchError,
   TokenRevokedError,
   TokenSessionMismatchError,
+  TokenTypeMismatchError,
 )
 from .repository import TokenRepository
 from .validation import (
@@ -45,12 +46,6 @@ class TokenService:
   def generate(self, payload: JWTInputParams) -> Token:
     """Generates a JWT token with the given audience, jti, and token type."""
 
-    if not isinstance(payload.type, TokenTypeEnum):
-      raise HTTPException(
-        status_code=400,
-        detail="Error: Invalid or missing token type. Token generation is aborted!",
-      )
-
     claims = get_jwt_claims(payload)
     token = encode_jwt(claims)
 
@@ -62,37 +57,29 @@ class TokenService:
     try:
       payload = decode_jwt(token.token)
 
-      if payload.get("type") != token.token_type:
-        raise HTTPException(status_code=400, detail="Error: Token type mismatch")
-
-      db_token = self.repository.get_by_token(token.token)
-
-      if db_token and db_token.is_revoked:
-        raise HTTPException(status_code=400, detail="Error: Token is revoked")
-
-      return db_token
-
     except jwt.ExpiredSignatureError as e:
-      raise HTTPException(status_code=400, detail="Error: Token is expired") from e
+      raise TokenExpiredError() from e
 
     except jwt.InvalidTokenError as e:
-      raise HTTPException(
-        status_code=400, detail="Error: Token signature is invalid"
-      ) from e
+      raise TokenInvalidError() from e
+
+
+    if payload.get("type") != token.token_type:
+        raise TokenTypeMismatchError()
+
+    db_token = self.repository.get_by_token(token.token)
+
+    if db_token.is_revoked:
+      raise TokenRevokedError()
+
+    return db_token
 
   def refresh_token(
     self, token: TokenRefreshRequest, user_service: UserService
   ) -> TokenResponse:
     """Refereshes the given access and refresh tokens and returns new tokens if valid."""
 
-    if not is_valid_jwt_token_format(token.access_token) or not is_valid_jwt_token_format(token.refresh_token):
-      raise TokenInvalidFormatError()
-
-    validated_token = TokenRefreshRequest.model_validate(token)
-
-    db_tokens = self.repository.get_by_tokens(
-      [validated_token.access_token, validated_token.refresh_token]
-    )
+    db_tokens = self.repository.get_by_tokens([token.access_token, token.refresh_token])
     access_token = db_tokens.access_token
     refresh_token = db_tokens.refresh_token
 
@@ -111,7 +98,7 @@ class TokenService:
     db_user = user_service.get_user({"id": access_token.user_id})
 
     if db_user is None:
-      raise HTTPException(status_code=400, detail="Error: User not found")
+      raise UserNotFoundError()
 
     new_token = self.create_auth_tokens(
       TokenAudience(id=access_token.user_id, uuid=db_user.uuid)
@@ -124,9 +111,6 @@ class TokenService:
 
   def create_auth_tokens(self, audience: TokenAudience) -> TokenResponse:
     """Creates a new pair of access and refresh tokens for the given audience and stores them in the database."""
-
-    if audience is None:
-      raise HTTPException(status_code=400, detail="Error: Audience cannot be empty")
 
     payload = {
       "jti": get_token_family_id(),
