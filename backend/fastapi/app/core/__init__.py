@@ -8,6 +8,7 @@ from .config import (
   get_security_config,
   get_smtp_config,
 )
+from .exception import AppException
 from .redis import redis_lifespan
 from .table import BaseTable
 
@@ -20,6 +21,7 @@ __all__ = [
   "get_database_url",
   "get_security_config",
   "get_smtp_config",
+  "AppException",
   "BaseTable",
   "redis_lifespan",
 ]
