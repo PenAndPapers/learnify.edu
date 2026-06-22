@@ -79,7 +79,7 @@ class TokenService:
   ) -> TokenResponse:
     """Refereshes the given access and refresh tokens and returns new tokens if valid."""
 
-    db_tokens = self.repository.get_by_tokens([token.access_token, token.refresh_token])
+    db_tokens = self.repository.get_by_tokens(token.access_token, token.refresh_token)
     access_token = db_tokens.access_token
     refresh_token = db_tokens.refresh_token
 

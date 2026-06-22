@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
 from .exceptions import TokenNotFoundError, TokenRequiredError
@@ -22,7 +22,7 @@ class TokenRepository:
 
     return [UserToken.model_validate(record) for record in records]
 
-  def get_by_token(self, token: str) -> UserToken | None:
+  def get_by_token(self, token: str) -> UserToken:
     """Get a token record from the database by token string"""
 
     if not token:
@@ -35,31 +35,31 @@ class TokenRepository:
 
     return UserToken.model_validate(db_token)
 
-  def get_by_tokens(self, tokens: list[str] | None = None) -> UserPairToken:
+  def get_by_tokens(self, access_token: str, refresh_token: str) -> UserPairToken:
     """Get multiple token records from the database by a list of token strings"""
 
-    if tokens is None:
-      raise TokenRequiredError()
-
     query = (
-        select(self.model)
-        .where(self.model.token.in_(tokens))
-        .order_by(self.model.id.asc())
+      select(self.model)
+      .where(
+        or_(
+          (self.model.token == access_token) & (self.model.token_type == TokenTypeEnum.ACCESS),
+          (self.model.token == refresh_token) & (self.model.token_type == TokenTypeEnum.REFRESH),
+        )
       )
+    )
     db_tokens = self.db.scalars(query).all()
 
     if not db_tokens or len(db_tokens) != 2:
         raise TokenNotFoundError()
 
-    validated_tokens = [UserToken(token) for token in db_tokens]
-    access_token = next((token for token in validated_tokens if token.token_type == TokenTypeEnum.ACCESS), None)
-    refresh_token = next((token for token in validated_tokens if token.token_type == TokenTypeEnum.REFRESH), None)
+    db_access_token = next((token for token in db_tokens if token.token_type == TokenTypeEnum.ACCESS), None)
+    db_refresh_token = next((token for token in db_tokens if token.token_type == TokenTypeEnum.REFRESH), None)
 
     # Ensures that both tokens are found otherwise we raise error
-    if not access_token or not refresh_token:
+    if not db_access_token or not db_refresh_token:
       raise TokenNotFoundError()
 
-    return UserPairToken(access_token=access_token, refresh_token=refresh_token)
+    return UserPairToken(access_token=db_access_token, refresh_token=db_refresh_token)
 
   def revoke_tokens(self, tokens: list[str] | None = None) -> None:
     """Update token to a revoke state"""
