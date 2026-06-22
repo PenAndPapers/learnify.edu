@@ -29,11 +29,26 @@ class TokenExpiredError(AppException):
 
 
 class TokenTypeMismatchError(AppException):
-  """An error when a token exist in database"""
   status_code=400
   error_code="TOKEN_MISMATCH"
 
   def __init__(self, message = "Error: Token type mismatch!"):
+    super().__init__(message)
+
+
+class TokenSessionMismatchError(AppException):
+  status_code=400
+  error_code="TOKEN_SESSION_MISMATCH"
+
+  def __init__(self, message = "Error: Token session mismatch!"):
+    super().__init__(message)
+
+
+class TokenPairMismatchError(AppException):
+  status_code=400
+  error_code="TOKEN_SESSION_MISMATCH"
+
+  def __init__(self, message = "Error: Token pair mismatch!"):
     super().__init__(message)
 
 

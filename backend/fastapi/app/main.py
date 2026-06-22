@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI
 
-from app.core import AppException, redis_lifespan
+from app.core.exception import AppException
+from app.core.handler import generic_exception_handler, global_exception_handler
+from app.core.redis import redis_lifespan
 
 # Routes
 from app.modules.authentication.route import router as auth_route
@@ -16,17 +17,11 @@ app = FastAPI(
   description="FastAPI Application",
   version="1.0.0",
   lifespan=redis_lifespan,
+  exception_handlers={
+    AppException: global_exception_handler,
+    Exception: generic_exception_handler
+  }
 )
-
-@app.exception_handler(AppException)
-def global_exception_handler(request: Request, exception: AppException):
-  return JSONResponse(
-    status_code=exception.status_code,
-    content={
-      "error": exception.error_code,
-      "detail": exception.message
-    }
-  )
 
 
 """

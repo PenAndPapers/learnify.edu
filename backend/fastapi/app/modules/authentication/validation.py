@@ -97,3 +97,8 @@ class UserToken(BaseModel):
   expires_at: datetime
 
   model_config = {"from_attributes": True}
+
+
+class UserPairToken(BaseModel):
+  access_token: UserToken
+  refresh_token: UserToken

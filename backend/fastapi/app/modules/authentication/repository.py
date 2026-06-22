@@ -3,9 +3,9 @@ from datetime import UTC, datetime
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-from .exceptions import TokenInvalidError, TokenNotFoundError, TokenRequiredError
+from .exceptions import TokenNotFoundError, TokenRequiredError
 from .table import TokenTable
-from .validation import UserToken
+from .validation import TokenTypeEnum, UserPairToken, UserToken
 
 
 class TokenRepository:
@@ -35,30 +35,35 @@ class TokenRepository:
 
     return UserToken.model_validate(db_token)
 
-  def get_by_tokens(self, tokens: list[str] | None = None) -> list[UserToken] | None:
+  def get_by_tokens(self, tokens: list[str] | None = None) -> UserPairToken:
     """Get multiple token records from the database by a list of token strings"""
+
     if tokens is None:
       raise TokenRequiredError()
 
-    try:
-      query = (
+    query = (
         select(self.model)
         .where(self.model.token.in_(tokens))
         .order_by(self.model.id.asc())
       )
-      db_tokens = self.db.scalars(query).all()
+    db_tokens = self.db.scalars(query).all()
 
-      if not db_tokens or len(db_tokens) != len(tokens):
+    if not db_tokens or len(db_tokens) != 2:
         raise TokenNotFoundError()
 
-      return [UserToken.model_validate(token) for token in db_tokens]
-    except Exception as e:
-      # TODO evaluate:
-      # - Is this a valid way of checking?
-      # - Is the error message means anything if model_validate fails?
-      raise TokenInvalidError() from e
+    validated_tokens = [UserToken(token) for token in db_tokens]
+    access_token = next((token for token in validated_tokens if token.token_type == TokenTypeEnum.ACCESS), None)
+    refresh_token = next((token for token in validated_tokens if token.token_type == TokenTypeEnum.REFRESH), None)
+
+    # Ensures that both tokens are found otherwise we raise error
+    if not access_token or not refresh_token:
+      raise TokenNotFoundError()
+
+    return UserPairToken(access_token=access_token, refresh_token=refresh_token)
 
   def revoke_tokens(self, tokens: list[str] | None = None) -> None:
+    """Update token to a revoke state"""
+
     if tokens is None or len(tokens) != 2:
       raise TokenRequiredError()
 

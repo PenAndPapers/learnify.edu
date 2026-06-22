@@ -12,6 +12,12 @@ from app.helpers.security.jwt import (
 from app.helpers.validators import is_valid_jwt_token_format
 from app.modules.user.service import UserService
 
+from .exceptions import (
+  TokenInvalidFormatError,
+  TokenPairMismatchError,
+  TokenRevokedError,
+  TokenSessionMismatchError,
+)
 from .repository import TokenRepository
 from .validation import (
   JWTInputParams,
@@ -79,47 +85,28 @@ class TokenService:
   ) -> TokenResponse:
     """Refereshes the given access and refresh tokens and returns new tokens if valid."""
 
-    if not is_valid_jwt_token_format(
-      token.access_token
-    ) or not is_valid_jwt_token_format(token.refresh_token):
-      raise HTTPException(status_code=400, detail="Error: Token is not valid")
+    if not is_valid_jwt_token_format(token.access_token) or not is_valid_jwt_token_format(token.refresh_token):
+      raise TokenInvalidFormatError()
 
     validated_token = TokenRefreshRequest.model_validate(token)
 
     db_tokens = self.repository.get_by_tokens(
       [validated_token.access_token, validated_token.refresh_token]
     )
-
-    # check that both access token and refresh token is in database
-    if not db_tokens or len(db_tokens) != 2:
-      raise HTTPException(status_code=400, detail="Error: Token does not exist.")
-
-    access_token = next(
-      (token for token in db_tokens if token.token_type == TokenTypeEnum.ACCESS.value),
-      None,
-    )
-    refresh_token = next(
-      (token for token in db_tokens if token.token_type == TokenTypeEnum.REFRESH.value),
-      None,
-    )
-
-    # check that access and refresh token has value
-    if access_token is None or refresh_token is None:
-      raise HTTPException(status_code=400, detail="Error: Missing token")
+    access_token = db_tokens.access_token
+    refresh_token = db_tokens.refresh_token
 
     # check that token are not revoked before creating a new one
     if access_token.is_revoked or refresh_token.is_revoked:
-      raise HTTPException(
-        status_code=400, detail="Error: Attempt to use a revoked token"
-      )
+      raise TokenRevokedError()
 
     # check that both access and refresh token user_id is match
     if access_token.user_id != refresh_token.user_id:
-      raise HTTPException(status_code=400, detail="Error: Token session mismatch")
+      raise TokenSessionMismatchError()
 
     # check that both access and refresh token family_id is match
     if access_token.family_id != refresh_token.family_id:
-      raise HTTPException(status_code=400, detail="Error: Token pair mismatch")
+      raise TokenPairMismatchError()
 
     db_user = user_service.get_user({"id": access_token.user_id})
 
