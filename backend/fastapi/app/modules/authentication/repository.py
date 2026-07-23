@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
-from .exceptions import TokenNotFoundError, TokenRequiredError
+from .exception import TokenNotFoundError, TokenRequiredError
 from .table import TokenTable
 from .validation import TokenTypeEnum, UserPairToken, UserToken
 
