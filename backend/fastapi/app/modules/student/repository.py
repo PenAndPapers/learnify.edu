@@ -1,7 +1,5 @@
 import uuid
 
-from sqlalchemy import false
-
 from app.database import DatabaseDep
 
 from .table import StudentTable
@@ -23,7 +21,7 @@ class StudentResitory:
     self.db.add(record)
 
     return record
-  
+
 
   def read(self, uuid: str) -> StudentFullResponse:
     """Get a student by UUID"""
@@ -31,7 +29,7 @@ class StudentResitory:
     record = self.db.query(self.model).filter(self.model.student_id == uuid).first()
 
     return record
-  
+
 
   def delete(self, uuid: str) -> bool:
     """Delete a student by UUID"""

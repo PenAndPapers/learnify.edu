@@ -1,5 +1,6 @@
 from app.core import AppException
 
+
 class StudentNotFoundException(AppException):
   """Exception raised when a student is not found in the database."""
   status_code = 404
