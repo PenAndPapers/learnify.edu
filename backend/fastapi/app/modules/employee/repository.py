@@ -23,3 +23,21 @@ class EmpoyeeResitory:
     self.db.add(record)
 
     return record
+
+  def read(self, uuid: str) -> EmployeeFullResponse:
+    """Get an employee by UUID"""
+
+    record = self.db.query(self.model).filter(self.model.employee_id == uuid).first()
+
+    return record
+
+  def delete(self, uuid: str) -> bool:
+    """Delete an employee by UUID"""
+
+    record = self.db.query(self.model).filter(self.model.employee_id == uuid).first()
+
+    if not record:
+      return False
+
+    self.db.delete(record)
+    return True
