@@ -33,3 +33,10 @@ def is_valid_uuid(value: str) -> bool:
   except (ValueError, AttributeError, TypeError):
     return False
 
+
+def validate_phone_number(value: str) -> str:
+  if not is_valid_phone_number(value):
+    raise ValueError(
+      "Invalid phone number format. Accepted special characters are +, -, (, ), and space. The phone number must contain at least 7 digits and can start with a + for country code."
+    )
+  return value

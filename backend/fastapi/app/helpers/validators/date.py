@@ -1,4 +1,3 @@
-
 from datetime import date
 
 
@@ -21,3 +20,11 @@ def is_birth_date_valid_to_register(value: date | None) -> bool:
     return False
 
   return True
+
+
+def validate_date_of_birth(value: date | None) -> date | None:
+  if not is_birth_date_valid_to_register(value):
+    raise ValueError(
+      "Invalid date of birth. User must be at least 10 years old and the date of birth cannot be in the future or before January 1, 1900."
+    )
+  return value

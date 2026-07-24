@@ -4,24 +4,8 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, EmailStr, Field
 
-from app.helpers.validators.date import is_birth_date_valid_to_register
-from app.helpers.validators.string import is_valid_phone_number
-
-
-def validate_date_of_birth(value: date | None) -> date | None:
-  if not is_birth_date_valid_to_register(value):
-    raise ValueError(
-      "Invalid date of birth. User must be at least 10 years old and the date of birth cannot be in the future or before January 1, 1900."
-    )
-  return value
-
-
-def validate_phone_number(value: str) -> str:
-  if not is_valid_phone_number(value):
-    raise ValueError(
-      "Invalid phone number format. Accepted special characters are +, -, (, ), and space. The phone number must contain at least 7 digits and can start with a + for country code."
-    )
-  return value
+from app.helpers.validators.date import validate_date_of_birth
+from app.helpers.validators.string import validate_phone_number
 
 ValidDateOfBirth = Annotated[date | None, AfterValidator(validate_date_of_birth)]
 ValidPhoneNumber = Annotated[str | None, AfterValidator(validate_phone_number)]
