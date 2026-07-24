@@ -3,7 +3,7 @@ import uuid
 from app.database import DatabaseDep
 
 from .table import StudentTable
-from .validation import CreateStudent, StudentFullResponse, UpdateStudent
+from .validation import CreateStudent, UpdateStudent
 
 
 class StudentResitory:
@@ -14,7 +14,7 @@ class StudentResitory:
   def _student_id_generator(self) -> str:
     return str(uuid.uuid4())
 
-  def create(self, student: CreateStudent) -> StudentFullResponse:
+  def create(self, student: CreateStudent) -> StudentTable:
     """Store student information in the database"""
 
     record = self.model(student_id=self._student_id_generator(), **student.model_dump())
@@ -22,15 +22,14 @@ class StudentResitory:
 
     return record
 
-
-  def read(self, uuid: str) -> StudentFullResponse | None:
+  def read(self, uuid: str) -> StudentTable | None:
     """Get a student by UUID"""
 
-    record = self.db.query(self.model).filter(self.model.student_id == uuid).first()
+    record = self.db.query(self.model).filter(self.model.uuid == uuid).first()
 
     return record
 
-  def update(self, uuid: str, student: UpdateStudent) -> StudentFullResponse:
+  def update(self, uuid: str, student: UpdateStudent) -> StudentTable | None:
     """Update a student by UUID"""
 
     record = self.read(uuid)

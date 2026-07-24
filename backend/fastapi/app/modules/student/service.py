@@ -6,7 +6,8 @@ from app.modules.student.exception import (
 )
 
 from .repository import StudentResitory
-from .validation import CreateStudent, StudentFullResponse, UpdateStudent
+from .table import StudentTable
+from .validation import CreateStudent, UpdateStudent
 
 
 class StudentService:
@@ -14,10 +15,10 @@ class StudentService:
     self.repository = repository
 
   def get_students(self) -> None:
-    """Get list of students"""
+    """Get list of students using pagination"""
     pass
 
-  def create(self, student: CreateStudent) -> StudentFullResponse:
+  def create(self, student: CreateStudent) -> StudentTable:
     """Create a new student record in the database with hashed password."""
 
     hash_pwd = hash_password(student.password)
@@ -29,7 +30,7 @@ class StudentService:
 
     return new_student
 
-  def read(self, uuid: str) -> StudentFullResponse:
+  def read(self, uuid: str) -> StudentTable:
     """Get a student by UUID."""
 
     if not is_valid_uuid(uuid):
@@ -40,9 +41,11 @@ class StudentService:
     if not student:
       raise StudentNotFoundException()
 
-    return student
+    _student = StudentTable.model_validate(student)
 
-  def update(self, uuid: str, student: UpdateStudent) -> StudentFullResponse:
+    return _student
+
+  def update(self, uuid: str, student: UpdateStudent) -> StudentTable:
     """Update a student record in the database by UUID."""
 
     updated_student = self.repository.update(uuid, student)
