@@ -1,7 +1,9 @@
 from app.helpers.security import hash_password
+from app.modules.enrollee.exception import EnrolleeNotFoundException
 from app.modules.user.validation import UserInternalResponse
 
 from .repository import EnrolleeResitory
+from .table import EnrolleeTable
 from .validation import CreateEnrollee, EnrolleeApplicationStatusEnum
 
 
@@ -11,7 +13,6 @@ class EnrolleeService:
 
   def create(self, enrollee: CreateEnrollee) -> UserInternalResponse:
     """Create a new enrollee application record in the database with default values for application status, user type, and verification status."""
-
     hash_pwd = hash_password(enrollee.password)
 
     enrollee_data = enrollee.model_copy(update={
@@ -25,6 +26,11 @@ class EnrolleeService:
 
     return new_enrollee
 
-  def get_enrollee(self, filter: dict) -> UserInternalResponse | None:
-    """Get an enrollee by filter."""
-    return self.repository.get_enrollee(filter, False)
+  def get_enrollee(self, uuid: str) -> EnrolleeTable | None:
+    """Get an enrollee by UUID."""
+    enrollee =  self.repository.get_enrollee(uuid)
+
+    if not enrollee:
+      raise EnrolleeNotFoundException()
+
+    return enrollee

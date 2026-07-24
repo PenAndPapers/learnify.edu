@@ -4,7 +4,7 @@ from app.modules.authentication.dependency import TokenServiceDep
 from app.modules.authentication.validation import TokenAudience, TokenResponse
 
 from .dependency import EnrolleeServiceDep
-from .validation import CreateEnrollee
+from .validation import CreateEnrollee, EnrolleeResponse
 
 router = APIRouter(prefix="/api/v1/enrolle/application", tags=["Enrollee"])
 
@@ -40,10 +40,12 @@ def enrollee_activate_account(token_code: str) -> None:
   pass
 
 
-@router.get("/{uuid}", response_model=None)
-def enrollee_application_profile() -> None:
+@router.get("/{uuid}", response_model=EnrolleeResponse)
+def enrollee_application_profile(uuid: str, enrolle_service: EnrolleeServiceDep) -> EnrolleeResponse:
   """Get enrollee application profile. Enrollee can view their application profile and status if application is approved, rejected, or pending."""
-  pass
+  enrollee = enrolle_service.get_enrollee(uuid)
+
+  return enrollee
 
 
 @router.patch("/verify/{uuid}", response_model=None)

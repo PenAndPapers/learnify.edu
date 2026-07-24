@@ -56,6 +56,10 @@ class CoursesEnum(StrEnum):
 class EnrolleeResponse(UserBaseResponse):
   """Enrollee details"""
 
+  previous_school: str
+  chosen_course: CoursesEnum
+  application_status: EnrolleeApplicationStatusEnum
+  is_verified: bool
   model_config = {"from_attributes": True}
 
 
