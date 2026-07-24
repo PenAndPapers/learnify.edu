@@ -72,3 +72,15 @@ class CreateEmployee(CreateUser):
   date_hired: date | None = None
   is_active: bool = True
   is_verified: bool = True
+
+  model_config = {"from_attributes": True}
+
+
+class UpdateEmployee(CreateUser):
+  user_type: UserTypeEnum = Field(default=UserTypeEnum.EMPLOYEE)
+  department: DepartmentEnum = Field(default=DepartmentEnum.ADMISSIONS)
+  role: EmployeeRoleEnum = Field(default=EmployeeRoleEnum.TEACHING_STAFF)
+  date_hired: date | None = None
+  is_active: bool = True
+
+  model_config = {"from_attributes": True}

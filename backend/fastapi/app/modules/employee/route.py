@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Response, status
 
 from .dependency import EmployeeServiceDep
-from .validation import CreateEmployee, EmployeeResponse
+from .validation import CreateEmployee, EmployeeResponse, UpdateEmployee
 
 router = APIRouter(prefix="/api/v1/employee", tags=["Employee"])
 
@@ -38,11 +38,13 @@ def get_employee(uuid: str, employee_service: EmployeeServiceDep) -> EmployeeRes
   return EmployeeResponse.model_validate(employee)
 
 
-@router.patch("/{uuid}", response_model=None)
-def update_employee() -> None:
+@router.patch("/{uuid}", response_model=EmployeeResponse)
+def update_employee(uuid: str, employee: UpdateEmployee, employee_service: EmployeeServiceDep) -> EmployeeResponse:
   """Update an employee account"""
-  pass
 
+  updated_employee = employee_service.update(uuid, employee)
+
+  return EmployeeResponse.model_validate(updated_employee)
 
 @router.delete("/{uuid}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_employee(uuid: str, employee_service: EmployeeServiceDep) -> Response:
