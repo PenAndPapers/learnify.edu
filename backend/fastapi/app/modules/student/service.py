@@ -48,6 +48,10 @@ class StudentService:
   def update(self, uuid: str, student: UpdateStudent) -> StudentTable:
     """Update a student record in the database by UUID."""
 
+    if hasattr(student, "password") and student.password:
+      hash_pwd = hash_password(student.password)
+      student = student.model_copy(update={"password": hash_pwd})
+
     updated_student = self.repository.update(uuid, student)
 
     if not updated_student:
