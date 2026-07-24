@@ -4,6 +4,7 @@ from pydantic import Field
 
 from app.modules.user.validation import (
   CreateUser,
+  UpdateUser,
   UserBaseResponse,
   UserInternalResponse,
   UserTypeEnum,
@@ -49,10 +50,9 @@ class CreateStudent(CreateUser):
   model_config = {"from_attributes": True}
 
 
-class UpdateStudent(CreateUser):
-  year_level: int = Field(
-    ..., ge=1, le=5, description="Year level must be between 1 and 5"
+class UpdateStudent(UpdateUser):
+  year_level: int | None = Field(
+    default=None, ge=1, le=5, description="Year level must be between 1 and 5"
   )
-  user_type: UserTypeEnum = Field(default=UserTypeEnum.STUDENT)
 
   model_config = {"from_attributes": True}

@@ -5,6 +5,7 @@ from pydantic import Field
 
 from app.modules.user.validation import (
   CreateUser,
+  UpdateUser,
   UserBaseResponse,
   UserInternalResponse,
   UserTypeEnum,
@@ -76,10 +77,9 @@ class CreateEmployee(CreateUser):
   model_config = {"from_attributes": True}
 
 
-class UpdateEmployee(CreateUser):
-  user_type: UserTypeEnum = Field(default=UserTypeEnum.EMPLOYEE)
-  department: DepartmentEnum = Field(default=DepartmentEnum.ADMISSIONS)
-  role: EmployeeRoleEnum = Field(default=EmployeeRoleEnum.TEACHING_STAFF)
+class UpdateEmployee(UpdateUser):
+  department: DepartmentEnum | None = Field(default=None)
+  role: EmployeeRoleEnum | None = Field(default=None)
   date_hired: date | None = None
   is_active: bool = True
 
