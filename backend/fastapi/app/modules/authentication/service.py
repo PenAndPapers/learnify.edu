@@ -46,6 +46,10 @@ class TokenService:
 
     return Token(token=token, expires_at=claims.exp)
 
+  def get_token(self, token_str: str) -> Token | None:
+    """Get a token from the database by its token string."""
+    return self.repository.get_by_token(token_str)
+
   def validate_token(self, token: TokenValidateRequest) -> UserToken | None:
     """Validates the given JWT token and returns the corresponding UserToken from the database if valid."""
 
@@ -62,7 +66,7 @@ class TokenService:
     if payload.get("type") != token.token_type:
         raise TokenTypeMismatchError()
 
-    db_token = self.repository.get_by_token(token.token)
+    db_token = self.get_token(token.token)
 
     if db_token.is_revoked:
       raise TokenRevokedError()
@@ -136,8 +140,3 @@ class TokenService:
       refresh_token=refresh_token.token,
       expires_at=access_token.expires_at,
     )
-
-
-class AuthService:
-  def __init__(self):
-    pass
