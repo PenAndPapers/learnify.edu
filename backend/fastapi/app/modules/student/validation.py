@@ -45,3 +45,14 @@ class CreateStudent(CreateUser):
   )
   user_type: UserTypeEnum = Field(default=UserTypeEnum.STUDENT)
   is_verified: int = True
+
+  model_config = {"from_attributes": True}
+
+
+class UpdateStudent(CreateUser):
+  year_level: int = Field(
+    ..., ge=1, le=5, description="Year level must be between 1 and 5"
+  )
+  user_type: UserTypeEnum = Field(default=UserTypeEnum.STUDENT)
+
+  model_config = {"from_attributes": True}

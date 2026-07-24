@@ -6,7 +6,7 @@ from app.modules.student.exception import (
 )
 
 from .repository import StudentResitory
-from .validation import CreateStudent, StudentFullResponse
+from .validation import CreateStudent, StudentFullResponse, UpdateStudent
 
 
 class StudentService:
@@ -42,13 +42,15 @@ class StudentService:
 
     return student
 
-  def update(self, uuid: str, student: CreateStudent) -> None:
+  def update(self, uuid: str, student: UpdateStudent) -> StudentFullResponse:
     """Update a student record in the database by UUID."""
 
-    if not is_valid_uuid(uuid):
-      raise StudentIDNotValidException()
+    updated_student = self.repository.update(uuid, student)
 
-    return False  # Placeholder for update logic, to be implemented
+    if not updated_student:
+      raise StudentNotFoundException()
+
+    return updated_student
 
   def delete(self, uuid: str) -> None:
     """Delete a student record in the database by UUID."""

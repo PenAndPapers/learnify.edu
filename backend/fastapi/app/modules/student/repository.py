@@ -3,7 +3,7 @@ import uuid
 from app.database import DatabaseDep
 
 from .table import StudentTable
-from .validation import CreateStudent, StudentFullResponse
+from .validation import CreateStudent, StudentFullResponse, UpdateStudent
 
 
 class StudentResitory:
@@ -23,18 +23,35 @@ class StudentResitory:
     return record
 
 
-  def read(self, uuid: str) -> StudentFullResponse:
+  def read(self, uuid: str) -> StudentFullResponse | None:
     """Get a student by UUID"""
 
     record = self.db.query(self.model).filter(self.model.student_id == uuid).first()
 
     return record
 
+  def update(self, uuid: str, student: UpdateStudent) -> StudentFullResponse:
+    """Update a student by UUID"""
+
+    record = self.read(uuid)
+
+    if not record:
+      return None
+
+    updated_data = student.model_dump(exclude_unset=True)
+
+    for key, value in updated_data.items():
+      setattr(record, key, value)
+
+    self.db.commit()
+    self.db.refresh(record)
+
+    return record
 
   def delete(self, uuid: str) -> bool:
     """Delete a student by UUID"""
 
-    record = self.db.query(self.model).filter(self.model.student_id == uuid).first()
+    record = self.read(uuid)
 
     if not record:
       return False

@@ -9,6 +9,7 @@ logger = logging.getLogger("app")
 
 
 def global_exception_handler(request: Request, exception: AppException):
+  """Handles application-specific exceptions."""
   return JSONResponse(
     status_code=exception.status_code,
     content={

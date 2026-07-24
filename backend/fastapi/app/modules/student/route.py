@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Response, status
 
 from .dependency import StudentServiceDep
-from .validation import CreateStudent, StudentResponse
+from .validation import CreateStudent, StudentResponse, UpdateStudent
 
 router = APIRouter(prefix="/api/v1/student", tags=["Student"])
 
@@ -25,7 +25,7 @@ def create_student(
   """Create a student account"""
   new_student = student_service.create(student)
 
-  return new_student
+  return StudentResponse.model_validate(new_student)
 
 
 @router.get("/{uuid}", response_model=StudentResponse)
@@ -37,10 +37,12 @@ def get_student(uuid: str, student_service: StudentServiceDep) -> StudentRespons
   return StudentResponse.model_validate(student)
 
 
-@router.patch("/{uuid}", response_model=None)
-def update_student() -> None:
+@router.patch("/{uuid}", response_model=StudentResponse)
+def update_student(uuid: str, student: UpdateStudent, student_service: StudentServiceDep) -> StudentResponse:
   """Update student account information"""
-  pass
+  updated_student = student_service.update(uuid, student)
+
+  return StudentResponse.model_validate(updated_student)
 
 
 @router.delete("/{uuid}", status_code=status.HTTP_204_NO_CONTENT)
