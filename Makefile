@@ -24,6 +24,9 @@ backend-fastapi-down:
 backend-fastapi-down-v:
 	$(MAKE) -C backend/fastapi docker-down-v
 
+backend-fastapi-restart:
+	$(MAKE) -C backend/fastapi docker-restart
+
 backend-fastapi-build:
 	$(MAKE) -C backend/fastapi docker-build
 

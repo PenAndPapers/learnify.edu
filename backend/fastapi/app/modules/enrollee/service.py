@@ -1,7 +1,10 @@
 from app.helpers.security import hash_password
-from app.modules.enrollee.exception import EnrolleeNotFoundException, EnrolleeIDNotValidException
-from app.modules.user.validation import UserInternalResponse
 from app.helpers.validators.string import is_valid_uuid
+from app.modules.enrollee.exception import (
+  EnrolleeIDNotValidException,
+  EnrolleeNotFoundException,
+)
+from app.modules.user.validation import UserInternalResponse
 
 from .repository import EnrolleeResitory
 from .table import EnrolleeTable
@@ -39,8 +42,3 @@ class EnrolleeService:
       raise EnrolleeNotFoundException()
 
     return enrollee
-
-
-  def activate_account(self, token: str) -> EnrolleeTable | None:
-    """Activate an enrollee account by verifying the activation token."""
-    pass

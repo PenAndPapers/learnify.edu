@@ -74,3 +74,11 @@ class TokenInvalidError(AppException):
 
   def __init__(self, message: str = "Error: Token is not valid"):
     super().__init__(message)
+
+
+class VerificationLinkNotSentError(AppException):
+  status_code=500
+  error_code="VERIFICATION_LINK_NOT_SENT"
+
+  def __init__(self, message: str = "Error: Verification link not sent"):
+    super().__init__(message)

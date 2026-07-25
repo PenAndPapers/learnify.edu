@@ -1,7 +1,9 @@
 from fastapi import APIRouter
 
-from app.modules.authentication.dependency import TokenServiceDep
+from app.modules.authentication.dependency import AuthServiceDep
 from app.modules.authentication.validation import TokenAudience, TokenResponse
+from app.modules.enrollee.exception import EnrolleeNotFoundException
+from app.modules.user.dependency import UserServiceDep
 
 from .dependency import EnrolleeServiceDep
 from .validation import CreateEnrollee, EnrolleeResponse
@@ -16,10 +18,10 @@ def get_enrollees() -> None:
 
 
 @router.post("/", response_model=TokenResponse)
-def enrollee_application_register(
+async def enrollee_application_register(
   enrrollee: CreateEnrollee,
   enrolle_service: EnrolleeServiceDep,
-  token_service: TokenServiceDep,
+  auth_service: AuthServiceDep,
 ) -> TokenResponse:
   """Enrollee application register. Enrollee can register their application and get the access token.
   The access token will be used to access the enrollee application profile and take the examination for the application.
@@ -28,16 +30,34 @@ def enrollee_application_register(
   new_enrollee = enrolle_service.create(enrrollee)
 
   if new_enrollee:
-    audience = {"id": new_enrollee.id, "uuid": new_enrollee.uuid}
-    token = token_service.create_auth_tokens(TokenAudience(**audience))
+    audience = TokenAudience(id=new_enrollee.id, uuid=new_enrollee.uuid)
+    token = auth_service.create_auth_tokens(audience)
+
+    verification_token = auth_service.create_email_verification_token(audience)
+    await auth_service.send_verification_email(new_enrollee.email, verification_token.token)
 
   return token
 
 
-@router.post("/activate/{uuid}", response_model=None)
-def enrollee_activate_account(token_code: str) -> None:
-  """Enrollee activate their account by clicking the activation link sent to their email."""
-  pass
+@router.post("/activate/{token_code}", response_model=None)
+def enrollee_verify_account(token_code: str, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
+  """Enrollee verify their account by clicking the verification link sent to their email."""
+
+  token = auth_service.verify_account(token_code)
+
+  user_id = token.user_id if token else None
+
+  if user_id:
+    user = user_service.verify_user(user_id)
+
+    if not user:
+      raise EnrolleeNotFoundException()
+
+    auth_service.revoke_tokens([token.token])
+
+  return {
+    "message": "Account has been successfully activated. You can now log in to your account."
+  }
 
 
 @router.get("/{uuid}", response_model=EnrolleeResponse)

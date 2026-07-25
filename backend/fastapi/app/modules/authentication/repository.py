@@ -64,7 +64,7 @@ class TokenRepository:
   def revoke_tokens(self, tokens: list[str] | None = None) -> None:
     """Update token to a revoke state"""
 
-    if tokens is None or len(tokens) != 2:
+    if tokens is None or len(tokens) == 0:
       raise TokenRequiredError()
 
     self.db.execute(

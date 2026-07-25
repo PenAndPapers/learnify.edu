@@ -41,9 +41,7 @@ class StudentService:
     if not student:
       raise StudentNotFoundException()
 
-    _student = StudentTable.model_validate(student)
-
-    return _student
+    return student
 
   def update(self, uuid: str, student: UpdateStudent) -> StudentTable:
     """Update a student record in the database by UUID."""

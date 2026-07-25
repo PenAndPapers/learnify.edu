@@ -16,6 +16,7 @@ class SecurityConfig(BaseModel):
   algorithm: str
   access_token_expire_minutes: int
   refresh_token_expire_days: int
+  email_verification_token_expire_hours: int
 
 
 class DatabaseConfig(BaseModel):
@@ -47,11 +48,13 @@ class EnvConfig(BaseSettings):
   environment: str = "local"
 
   api_port: str = "8000"
+  base_url: str = "http://localhost:8000"
 
   secret_key: str = "e8a8b273b3104c3d9b4c0274bb85a1102e3b8a1c3df4209bb9274092b7c11d04"
   algorithm: str = "HS256"
   access_token_expire_minutes: int = 30
   refresh_token_expire_days: int = 1
+  email_verification_token_expire_hours: int = 24
 
   postgres_host: str = "database"
   postgres_port: str = "5432"
@@ -84,6 +87,8 @@ def get_app_config() -> AppConfig:
     name=env_config.app_name,
     version=env_config.app_version,
     environment=env_config.environment,
+    api_port=env_config.api_port,
+    base_url=env_config.base_url,
   )
 
 
@@ -93,6 +98,7 @@ def get_security_config() -> SecurityConfig:
     algorithm=env_config.algorithm,
     access_token_expire_minutes=env_config.access_token_expire_minutes,
     refresh_token_expire_days=env_config.refresh_token_expire_days,
+    email_verification_token_expire_hours=env_config.email_verification_token_expire_hours,
   )
 
 

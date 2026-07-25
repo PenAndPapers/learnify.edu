@@ -1,14 +1,16 @@
-
 import jwt
 
+from app.core.config import env_config
 from app.helpers.security.jwt import (
   decode_jwt,
   encode_jwt,
   get_jwt_claims,
   get_token_family_id,
 )
+from app.helpers.validators.string import is_valid_uuid
 from app.modules.user.exception import UserNotFoundError
 from app.modules.user.service import UserService
+from app.utils.email.email import send_email
 
 from .exception import (
   TokenExpiredError,
@@ -17,6 +19,7 @@ from .exception import (
   TokenRevokedError,
   TokenSessionMismatchError,
   TokenTypeMismatchError,
+  VerificationLinkNotSentError,
 )
 from .repository import TokenRepository
 from .validation import (
@@ -31,7 +34,7 @@ from .validation import (
 )
 
 
-class TokenService:
+class AuthService:
   def __init__(
     self,
     repository: TokenRepository,
@@ -46,7 +49,11 @@ class TokenService:
 
     return Token(token=token, expires_at=claims.exp)
 
-  def get_token(self, token_str: str) -> Token | None:
+  def revoke_tokens(self, tokens: list[str] | None = None) -> None:
+    """Revoke the given tokens by updating their is_revoked field in the database."""
+    self.repository.revoke_tokens(tokens)
+
+  def get_token(self, token_str: str) -> UserToken | None:
     """Get a token from the database by its token string."""
     return self.repository.get_by_token(token_str)
 
@@ -94,7 +101,7 @@ class TokenService:
     if access_token.family_id != refresh_token.family_id:
       raise TokenPairMismatchError()
 
-    db_user = user_service.get_user({"id": access_token.user_id})
+    db_user = user_service.filter_user({"id": access_token.user_id})
 
     if db_user is None:
       raise UserNotFoundError()
@@ -103,7 +110,7 @@ class TokenService:
       TokenAudience(id=access_token.user_id, uuid=db_user.uuid)
     )
 
-    self.repository.revoke_tokens([access_token.token, refresh_token.token])
+    self.revoke_tokens([access_token.token, refresh_token.token])
     self.repository.db.flush()
 
     return new_token
@@ -140,3 +147,69 @@ class TokenService:
       refresh_token=refresh_token.token,
       expires_at=access_token.expires_at,
     )
+
+  def create_email_verification_token(self, audience: TokenAudience) -> Token:
+    """Creates a new email verification token for the given audience and stores it in the database."""
+
+    payload = {
+      "jti": get_token_family_id(),
+      "aud": audience.uuid,
+    }
+
+    email_verification_token = self.generate(
+      JWTInputParams(**payload, type=TokenTypeEnum.EMAIL_VERIFICATION)
+    )
+
+    email_verification_token_record = UserToken(
+      **email_verification_token.model_dump(),
+      is_revoked=False,
+      user_id=audience.id,
+      token_type=TokenTypeEnum.EMAIL_VERIFICATION,
+      family_id=payload["jti"]
+    )
+
+    self.repository.create([email_verification_token_record])
+    self.repository.db.flush()
+
+    return email_verification_token
+
+  async def send_verification_email(self, email: str, token: str) -> None:
+    """Sends a verification email to the user with the given audience."""
+
+    if not email or not token:
+      raise VerificationLinkNotSentError()
+
+    html_template = f"""
+    <html>
+      <body style="font-family: sans-serif; color: #333; padding: 20px;">
+        <h2 style="color: #4CAF50;">Verify Your Account</h2>
+        <p>Thank you for registering! Please click the link below to verify your account:</p>
+        <a href="{env_config.base_url}/enrollee/activate/{token}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Verify Account</a>
+        <p>If you did not register for this account, please ignore this email.</p>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+        <small style="color: #666;">This is a system generated notification from your Learnify.edu application.</small>
+      </body>
+    </html>
+    """
+
+    await send_email(
+      to=email,
+      subject="Verify your account",
+      content=html_template
+    )
+
+  def verify_account(self, token_code: str) -> UserToken | None:
+    """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
+
+    if not is_valid_uuid(token_code):
+      raise TokenInvalidError()
+
+    token = self.get_token(token_code)
+
+    if token.is_revoked:
+      raise TokenRevokedError()
+
+    if token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
+      raise TokenTypeMismatchError()
+
+    return token
