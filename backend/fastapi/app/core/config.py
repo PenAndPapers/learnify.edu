@@ -48,7 +48,7 @@ class EnvConfig(BaseSettings):
   environment: str = "local"
 
   api_port: str = "8000"
-  base_url: str = "http://localhost:8000"
+  base_url: str = "http://localhost"
 
   secret_key: str = "e8a8b273b3104c3d9b4c0274bb85a1102e3b8a1c3df4209bb9274092b7c11d04"
   algorithm: str = "HS256"

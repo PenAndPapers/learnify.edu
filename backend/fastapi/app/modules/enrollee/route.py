@@ -2,8 +2,6 @@ from fastapi import APIRouter
 
 from app.modules.authentication.dependency import AuthServiceDep
 from app.modules.authentication.validation import TokenAudience, TokenResponse
-from app.modules.enrollee.exception import EnrolleeNotFoundException
-from app.modules.user.dependency import UserServiceDep
 
 from .dependency import EnrolleeServiceDep
 from .validation import CreateEnrollee, EnrolleeResponse
@@ -37,27 +35,6 @@ async def enrollee_application_register(
     await auth_service.send_verification_email(new_enrollee.email, verification_token.token)
 
   return token
-
-
-@router.post("/activate/{token_code}", response_model=None)
-def enrollee_verify_account(token_code: str, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
-  """Enrollee verify their account by clicking the verification link sent to their email."""
-
-  token = auth_service.verify_account(token_code)
-
-  user_id = token.user_id if token else None
-
-  if user_id:
-    user = user_service.verify_user(user_id)
-
-    if not user:
-      raise EnrolleeNotFoundException()
-
-    auth_service.revoke_tokens([token.token])
-
-  return {
-    "message": "Account has been successfully activated. You can now log in to your account."
-  }
 
 
 @router.get("/{uuid}", response_model=EnrolleeResponse)

@@ -147,6 +147,19 @@ class AuthService:
       expires_at=access_token.expires_at,
     )
 
+  def verify_account(self, token_code: str) -> UserToken | None:
+    """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
+
+    token = self.get_token(token_code)
+
+    if token.is_revoked:
+      raise TokenRevokedError()
+
+    if token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
+      raise TokenInvalidError()
+
+    return token
+
   def create_email_verification_token(self, audience: TokenAudience) -> Token:
     """Creates a new email verification token for the given audience and stores it in the database."""
 
@@ -178,7 +191,7 @@ class AuthService:
     if not email or not token:
       raise VerificationLinkNotSentError()
 
-    verification_url = f"{env_config.base_url}/enrollee/activate/{token}"
+    verification_url = f"{env_config.base_url}/api/v1/authentication/token/verify/{token}"
 
     html_template = render_email_template(
       template_name="account_verification.html",
@@ -190,16 +203,3 @@ class AuthService:
       subject="Verify your account",
       content=html_template
     )
-
-  def verify_account(self, token_code: str) -> UserToken | None:
-    """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
-
-    token = self.get_token(token_code)
-
-    if token.is_revoked:
-      raise TokenRevokedError()
-
-    if token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
-      raise TokenInvalidError()
-
-    return token
