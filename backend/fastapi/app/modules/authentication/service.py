@@ -48,6 +48,24 @@ class AuthService:
 
     return Token(token=token, expires_at=claims.exp)
 
+  def save_token(self, audience: TokenAudience, family_id: str, token: list[tuple[Token, TokenTypeEnum]]) -> None:
+    tokens = [
+      UserToken(
+        **token_obj.model_dump(),
+        is_revoked=False,
+        user_id=audience.id,
+        token_type=token_type,
+        family_id=family_id
+      )
+      for token_obj, token_type in [
+        (access_token, TokenTypeEnum.ACCESS),
+        (refresh_token, TokenTypeEnum.REFRESH),
+      ]
+    ]
+
+    self.repository.create(tokens)
+    self.repository.db.flush()
+
   def revoke_tokens(self, tokens: list[str] | None = None) -> None:
     """Revoke the given tokens by updating their is_revoked field in the database."""
     self.repository.revoke_tokens(tokens)
@@ -55,6 +73,19 @@ class AuthService:
   def get_token(self, token_str: str) -> UserToken | None:
     """Get a token from the database by its token string."""
     return self.repository.get_by_token(token_str)
+
+  def verify_account(self, token_code: str) -> UserToken | None:
+    """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
+
+    token = self.get_token(token_code)
+
+    if token.is_revoked:
+      raise TokenRevokedError()
+
+    if token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
+      raise TokenInvalidError()
+
+    return token
 
   def validate_token(self, token: TokenValidateRequest) -> UserToken | None:
     """Validates the given JWT token and returns the corresponding UserToken from the database if valid."""
@@ -124,41 +155,13 @@ class AuthService:
 
     access_token = self.generate(JWTInputParams(**payload, type=TokenTypeEnum.ACCESS))
     refresh_token = self.generate(JWTInputParams(**payload, type=TokenTypeEnum.REFRESH))
-    tokens = [
-      UserToken(
-        **token_obj.model_dump(),
-        is_revoked=False,
-        user_id=audience.id,
-        token_type=token_type,
-        family_id=payload["jti"]
-      )
-      for token_obj, token_type in [
-        (access_token, TokenTypeEnum.ACCESS),
-        (refresh_token, TokenTypeEnum.REFRESH),
-      ]
-    ]
-
-    self.repository.create(tokens)
-    self.repository.db.flush()
+    
 
     return TokenResponse(
       access_token=access_token.token,
       refresh_token=refresh_token.token,
       expires_at=access_token.expires_at,
     )
-
-  def verify_account(self, token_code: str) -> UserToken | None:
-    """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
-
-    token = self.get_token(token_code)
-
-    if token.is_revoked:
-      raise TokenRevokedError()
-
-    if token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
-      raise TokenInvalidError()
-
-    return token
 
   def create_email_verification_token(self, audience: TokenAudience) -> Token:
     """Creates a new email verification token for the given audience and stores it in the database."""
