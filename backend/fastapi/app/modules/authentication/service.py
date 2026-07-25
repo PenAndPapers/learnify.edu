@@ -7,10 +7,9 @@ from app.helpers.security.jwt import (
   get_jwt_claims,
   get_token_family_id,
 )
-from app.helpers.validators.string import is_valid_uuid
 from app.modules.user.exception import UserNotFoundError
 from app.modules.user.service import UserService
-from app.utils.email.email import send_email
+from app.utils.email.email import render_email_template, send_email
 
 from .exception import (
   TokenExpiredError,
@@ -179,18 +178,12 @@ class AuthService:
     if not email or not token:
       raise VerificationLinkNotSentError()
 
-    html_template = f"""
-    <html>
-      <body style="font-family: sans-serif; color: #333; padding: 20px;">
-        <h2 style="color: #4CAF50;">Verify Your Account</h2>
-        <p>Thank you for registering! Please click the link below to verify your account:</p>
-        <a href="{env_config.base_url}/enrollee/activate/{token}" style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">Verify Account</a>
-        <p>If you did not register for this account, please ignore this email.</p>
-        <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-        <small style="color: #666;">This is a system generated notification from your Learnify.edu application.</small>
-      </body>
-    </html>
-    """
+    verification_url = f"{env_config.base_url}/enrollee/activate/{token}"
+
+    html_template = render_email_template(
+      template_name="account_verification.html",
+      context={"verification_url": verification_url},
+    )
 
     await send_email(
       to=email,
@@ -201,15 +194,12 @@ class AuthService:
   def verify_account(self, token_code: str) -> UserToken | None:
     """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
 
-    if not is_valid_uuid(token_code):
-      raise TokenInvalidError()
-
     token = self.get_token(token_code)
 
     if token.is_revoked:
       raise TokenRevokedError()
 
     if token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
-      raise TokenTypeMismatchError()
+      raise TokenInvalidError()
 
     return token

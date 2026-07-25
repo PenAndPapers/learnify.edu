@@ -4,7 +4,7 @@ from sqlalchemy import text
 from app.database import DatabaseDep
 
 # Utils
-from app.utils.email.email import send_welcome_email
+from app.utils.email.email import send_test_email
 
 router = APIRouter(prefix="/api/v1/system", tags=["System"])
 
@@ -55,4 +55,4 @@ async def check_redis(request: Request) -> dict[str, str]:
 
 @router.get("/check-send-email")
 async def check_send_email() -> None:
-  await send_welcome_email("testuser@email.com", "Test email subject")
+  await send_test_email()
