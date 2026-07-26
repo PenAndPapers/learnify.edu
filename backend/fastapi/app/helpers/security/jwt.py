@@ -16,26 +16,21 @@ app_config = get_app_config()
 jwt_config = get_security_config()
 
 
-def get_jwt_time() -> datetime:
-  """Get JWT time"""
-  return datetime.now(UTC)
-
-
 def get_token_family_id() -> str:
   """Generate a token family id used for pairing access and refresh token"""
   return str(uuid4())
 
 
-def get_jwt_expiration(type: TokenTypeEnum) -> datetime:
+def get_jwt_expiration(type: TokenTypeEnum, time: datetime) -> datetime:
   """Get JWT expiration based on token type"""
 
   match type:
     case TokenTypeEnum.ACCESS:
-      return get_jwt_time() + timedelta(minutes=jwt_config.access_token_expire_minutes)
+      return time + timedelta(minutes=jwt_config.access_token_expire_minutes)
     case TokenTypeEnum.REFRESH:
-      return get_jwt_time() + timedelta(days=jwt_config.refresh_token_expire_days)
+      return time + timedelta(days=jwt_config.refresh_token_expire_days)
     case TokenTypeEnum.EMAIL_VERIFICATION:
-      return get_jwt_time() + timedelta(
+      return time + timedelta(
         hours=jwt_config.email_verification_token_expire_hours
       )
     case _:
@@ -45,10 +40,12 @@ def get_jwt_expiration(type: TokenTypeEnum) -> datetime:
 def get_jwt_claims(claims: JWTInputParams) -> JWTClaims:
   """Get JWT claims"""
 
+  current_time = datetime.now(UTC)
+
   return JWTClaims(
     iss=app_config.name,
-    iat=get_jwt_time().timestamp(),
-    exp=get_jwt_expiration(claims.type),
+    iat=current_time.timestamp(),
+    exp=get_jwt_expiration(claims.type, current_time),
     **claims.model_dump(),
   )
 
