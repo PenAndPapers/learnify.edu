@@ -78,15 +78,12 @@ class AuthService:
   def verify_account(self, token_code: str) -> UserToken | None:
     """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
 
-    token = self.get_token(token_code)
+    validated_token = self.validate_token(TokenValidateRequest(token=token_code, token_type=TokenTypeEnum.EMAIL_VERIFICATION))
 
-    if token.is_revoked:
-      raise TokenRevokedError()
-
-    if token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
+    if validated_token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
       raise TokenInvalidError()
 
-    return token
+    return validated_token
 
   def validate_token(self, token: TokenValidateRequest) -> UserToken | None:
     """Validates the given JWT token and returns the corresponding UserToken from the database if valid."""
