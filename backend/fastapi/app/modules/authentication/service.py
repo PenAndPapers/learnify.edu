@@ -40,7 +40,7 @@ class AuthService:
   ):
     self.repository = repository
 
-  def generate(self, payload: JWTInputParams) -> Token:
+  def generate_token(self, payload: JWTInputParams) -> Token:
     """Generates a JWT token with the given audience, jti, and token type."""
 
     claims = get_jwt_claims(payload)
@@ -48,8 +48,8 @@ class AuthService:
 
     return Token(token=token, expires_at=claims.exp)
 
-  def save_token(self, audience: TokenAudience, family_id: str, token: list[tuple[Token, TokenTypeEnum]]) -> None:
-    tokens = [
+  def save_token(self, audience: TokenAudience, family_id: str, tokens: list[tuple[Token, TokenTypeEnum]]) -> list[UserToken]:
+    token_records = [
       UserToken(
         **token_obj.model_dump(),
         is_revoked=False,
@@ -57,14 +57,13 @@ class AuthService:
         token_type=token_type,
         family_id=family_id
       )
-      for token_obj, token_type in [
-        (access_token, TokenTypeEnum.ACCESS),
-        (refresh_token, TokenTypeEnum.REFRESH),
-      ]
+      for token_obj, token_type in tokens
     ]
 
-    self.repository.create(tokens)
+    db_tokens = self.repository.create(token_records)
     self.repository.db.flush()
+
+    return db_tokens
 
   def revoke_tokens(self, tokens: list[str] | None = None) -> None:
     """Revoke the given tokens by updating their is_revoked field in the database."""
@@ -153,9 +152,17 @@ class AuthService:
       "aud": audience.uuid,
     }
 
-    access_token = self.generate(JWTInputParams(**payload, type=TokenTypeEnum.ACCESS))
-    refresh_token = self.generate(JWTInputParams(**payload, type=TokenTypeEnum.REFRESH))
-    
+    access_token = self.generate_token(JWTInputParams(**payload, type=TokenTypeEnum.ACCESS))
+    refresh_token = self.generate_token(JWTInputParams(**payload, type=TokenTypeEnum.REFRESH))
+
+    self.save_token(
+      audience,
+      payload["jti"],
+      [
+        (access_token, TokenTypeEnum.ACCESS),
+        (refresh_token, TokenTypeEnum.REFRESH)
+      ]
+    )
 
     return TokenResponse(
       access_token=access_token.token,
@@ -171,16 +178,16 @@ class AuthService:
       "aud": audience.uuid,
     }
 
-    email_verification_token = self.generate(
+    email_verification_token = self.generate_token(
       JWTInputParams(**payload, type=TokenTypeEnum.EMAIL_VERIFICATION)
     )
 
-    email_verification_token_record = UserToken(
-      **email_verification_token.model_dump(),
-      is_revoked=False,
-      user_id=audience.id,
-      token_type=TokenTypeEnum.EMAIL_VERIFICATION,
-      family_id=payload["jti"]
+    email_verification_token_record = self.save_token(
+      audience,
+      payload["jti"],
+      [
+        (email_verification_token, TokenTypeEnum.EMAIL_VERIFICATION)
+      ]
     )
 
     self.repository.create([email_verification_token_record])

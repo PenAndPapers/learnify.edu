@@ -21,12 +21,12 @@ class JWTInputParams(BaseModel):
 
 
 class JWTClaims(BaseModel):
-    iss: str
-    iat: float
-    jti: str
-    aud: str
-    type: str
-    exp: datetime
+  iss: str
+  iat: float
+  jti: str
+  aud: str
+  type: str
+  exp: datetime
 
 
 class Token(BaseModel):
