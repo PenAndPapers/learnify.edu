@@ -40,6 +40,14 @@ class AuthService:
   ):
     self.repository = repository
 
+  def get_token(self, token_str: str) -> UserToken | None:
+    """Get a token from the database by its token string."""
+    return self.repository.get_by_token(token_str)
+
+  def revoke_tokens(self, tokens: list[str] | None = None) -> None:
+    """Revoke the given tokens by updating their is_revoked field in the database."""
+    self.repository.revoke_tokens(tokens)
+
   def generate_token(self, payload: JWTInputParams) -> Token:
     """Generates a JWT token with the given audience, jti, and token type."""
 
@@ -64,14 +72,6 @@ class AuthService:
     self.repository.db.flush()
 
     return db_tokens
-
-  def revoke_tokens(self, tokens: list[str] | None = None) -> None:
-    """Revoke the given tokens by updating their is_revoked field in the database."""
-    self.repository.revoke_tokens(tokens)
-
-  def get_token(self, token_str: str) -> UserToken | None:
-    """Get a token from the database by its token string."""
-    return self.repository.get_by_token(token_str)
 
   def verify_account(self, token_code: str) -> UserToken | None:
     """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
@@ -182,16 +182,13 @@ class AuthService:
       JWTInputParams(**payload, type=TokenTypeEnum.EMAIL_VERIFICATION)
     )
 
-    email_verification_token_record = self.save_token(
+    self.save_token(
       audience,
       payload["jti"],
       [
         (email_verification_token, TokenTypeEnum.EMAIL_VERIFICATION)
       ]
     )
-
-    self.repository.create([email_verification_token_record])
-    self.repository.db.flush()
 
     return email_verification_token
 
