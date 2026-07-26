@@ -34,10 +34,7 @@ from .validation import (
 
 
 class AuthService:
-  def __init__(
-    self,
-    repository: TokenRepository,
-  ):
+  def __init__(self, repository: TokenRepository):
     self.repository = repository
 
   def get_token(self, token_str: str) -> UserToken | None:
@@ -56,14 +53,19 @@ class AuthService:
 
     return Token(token=token, expires_at=claims.exp)
 
-  def save_token(self, audience: TokenAudience, family_id: str, tokens: list[tuple[Token, TokenTypeEnum]]) -> list[UserToken]:
+  def save_token(
+    self,
+    audience: TokenAudience,
+    family_id: str,
+    tokens: list[tuple[Token, TokenTypeEnum]],
+  ) -> list[UserToken]:
     token_records = [
       UserToken(
         **token_obj.model_dump(),
         is_revoked=False,
         user_id=audience.id,
         token_type=token_type,
-        family_id=family_id
+        family_id=family_id,
       )
       for token_obj, token_type in tokens
     ]
@@ -98,9 +100,8 @@ class AuthService:
     except jwt.InvalidTokenError as e:
       raise TokenInvalidError() from e
 
-
     if payload.get("type") != token.token_type:
-        raise TokenTypeMismatchError()
+      raise TokenTypeMismatchError()
 
     db_token = self.get_token(token.token)
 
@@ -152,16 +153,17 @@ class AuthService:
       "aud": audience.uuid,
     }
 
-    access_token = self.generate_token(JWTInputParams(**payload, type=TokenTypeEnum.ACCESS))
-    refresh_token = self.generate_token(JWTInputParams(**payload, type=TokenTypeEnum.REFRESH))
+    access_token = self.generate_token(
+      JWTInputParams(**payload, type=TokenTypeEnum.ACCESS)
+    )
+    refresh_token = self.generate_token(
+      JWTInputParams(**payload, type=TokenTypeEnum.REFRESH)
+    )
 
     self.save_token(
       audience,
       payload["jti"],
-      [
-        (access_token, TokenTypeEnum.ACCESS),
-        (refresh_token, TokenTypeEnum.REFRESH)
-      ]
+      [(access_token, TokenTypeEnum.ACCESS), (refresh_token, TokenTypeEnum.REFRESH)],
     )
 
     return TokenResponse(
@@ -185,9 +187,7 @@ class AuthService:
     self.save_token(
       audience,
       payload["jti"],
-      [
-        (email_verification_token, TokenTypeEnum.EMAIL_VERIFICATION)
-      ]
+      [(email_verification_token, TokenTypeEnum.EMAIL_VERIFICATION)],
     )
 
     return email_verification_token
@@ -198,15 +198,13 @@ class AuthService:
     if not email or not token:
       raise VerificationLinkNotSentError()
 
-    verification_url = f"{env_config.base_url}/api/v1/authentication/token/verify/{token}"
+    verification_url = (
+      f"{env_config.base_url}/api/v1/authentication/token/verify/{token}"
+    )
 
     html_template = render_email_template(
       template_name="account_verification.html",
       context={"verification_url": verification_url},
     )
 
-    await send_email(
-      to=email,
-      subject="Verify your account",
-      content=html_template
-    )
+    await send_email(to=email, subject="Verify your account", content=html_template)

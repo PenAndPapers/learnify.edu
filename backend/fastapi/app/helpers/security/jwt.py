@@ -15,17 +15,14 @@ from app.modules.authentication.validation import (
 app_config = get_app_config()
 jwt_config = get_security_config()
 
-now = datetime.now(UTC)
-
 
 def get_jwt_time() -> datetime:
   """Get JWT time"""
-  return now
+  return datetime.now(UTC)
 
 
 def get_token_family_id() -> str:
   """Generate a token family id used for pairing access and refresh token"""
-
   return str(uuid4())
 
 
@@ -34,15 +31,11 @@ def get_jwt_expiration(type: TokenTypeEnum) -> datetime:
 
   match type:
     case TokenTypeEnum.ACCESS:
-      return now + timedelta(
-        minutes=jwt_config.access_token_expire_minutes
-      )
+      return get_jwt_time() + timedelta(minutes=jwt_config.access_token_expire_minutes)
     case TokenTypeEnum.REFRESH:
-      return now + timedelta(
-        days=jwt_config.refresh_token_expire_days
-      )
+      return get_jwt_time() + timedelta(days=jwt_config.refresh_token_expire_days)
     case TokenTypeEnum.EMAIL_VERIFICATION:
-      return now + timedelta(
+      return get_jwt_time() + timedelta(
         hours=jwt_config.email_verification_token_expire_hours
       )
     case _:
@@ -53,9 +46,9 @@ def get_jwt_claims(claims: JWTInputParams) -> JWTClaims:
   """Get JWT claims"""
 
   return JWTClaims(
-    iss = app_config.name,
-    iat = now.timestamp(),
-    exp = get_jwt_expiration(claims.type),
+    iss=app_config.name,
+    iat=get_jwt_time().timestamp(),
+    exp=get_jwt_expiration(claims.type),
     **claims.model_dump(),
   )
 
@@ -68,11 +61,7 @@ def encode_jwt(claims: JWTClaims) -> str:
   if isinstance(payload.get("exp"), datetime):
     payload["exp"] = int(payload["exp"].timestamp())
 
-  token = jwt.encode(
-    payload,
-    jwt_config.secret_key,
-    algorithm=jwt_config.algorithm
-  )
+  token = jwt.encode(payload, jwt_config.secret_key, algorithm=jwt_config.algorithm)
 
   return token
 
