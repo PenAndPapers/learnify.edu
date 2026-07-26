@@ -3,14 +3,12 @@ from app.modules.user.exception import UserAlreadyVerifiedError, UserNotFoundErr
 from app.modules.user.table import UserTable
 
 from .repository import UserRepository
-from .validation import UserInternalResponse
-
 
 class UserService:
   def __init__(self, repository: UserRepository):
     self.repository = repository
 
-  def filter_user(self, filter: dict) -> UserInternalResponse | None:
+  def filter_user(self, filter: dict) -> UserTable | None:
     return self.repository.filter_user(filter)
 
   def get_by_id(self, user_id: int) -> UserTable | None:

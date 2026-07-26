@@ -6,10 +6,17 @@ from app.modules.user.exception import UserNotFoundError
 from .dependency import AuthServiceDep
 from .validation import TokenRefreshRequest, TokenResponse, TokenValidateRequest
 
-router = APIRouter(prefix="/api/v1/authentication/token", tags=["Authentication"])
+router = APIRouter(prefix="/api/v1/authentication", tags=["Authentication"])
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post("/validate_token", response_model=bool)
+def validate_token(token: TokenValidateRequest, auth_service: AuthServiceDep) -> bool:
+  token = auth_service.validate_token(token)
+
+  return token is not None
+
+
+@router.post("/refresh_token", response_model=TokenResponse)
 def refresh_token(
   token: TokenRefreshRequest,
   auth_service: AuthServiceDep,
@@ -20,16 +27,9 @@ def refresh_token(
   return token
 
 
-@router.post("/validate", response_model=bool)
-def validate_token(token: TokenValidateRequest, auth_service: AuthServiceDep) -> bool:
-  token = auth_service.validate_token(token)
-
-  return token is not None
-
-
-@router.get("/verify/{token_code}", response_model=None)
+@router.get("/verify_token/{token_code}", response_model=None)
 def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
-  """Enrollee verify their account by clicking the verification link sent to their email."""
+  """User verify their account by clicking the verification link sent to their email."""
 
   token = auth_service.verify_account(token_code)
 
@@ -46,3 +46,32 @@ def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: 
   return {
     "message": "Account has been successfully activated. You can now log in to your account."
   }
+
+
+@router.post("/password/reset", response_model=None)
+def password_reset() -> None:
+  """User has requested to update their password and system will send a link to update password
+  
+  TODO:
+    - validate user input email
+    - validate if email exist
+    - generate a jwt token with type of RESET_PASSWORD
+    - set token validity for 15mins
+    - prevent user to flood sending of email when they have unused and not expired RESET_PASSWORD token
+    - send email to user with password update link
+  """
+  pass
+
+
+@router.post("/password/update", response_model=None)
+def password_update() -> None:
+  """Update user's password
+  
+  TODO:
+    - validate the token is valid and not used or expired
+    - validate user password input
+    - password and confirm password should match
+    - update user password in database using user's uuid from the token
+    - send email to user with message that email has been updated
+  """
+  pass
