@@ -3,19 +3,34 @@
   <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Account Verification</title>
+    <title>Welcome to Learnify.edu</title>
   </head>
-  <body style="font-family: sans-serif; color: #333; padding: 20px;">
-    <h2 style="color: #4CAF50;">Verify Your Account</h2>
-    <p>Thank you for registering! Please click the link below to verify your account:</p>
-    
-    <a href="{{ verification_url }}" 
-       style="display: inline-block; padding: 10px 20px; background-color: #4CAF50; color: white; text-decoration: none; border-radius: 5px;">
-       Verify Account
-    </a>
+  <body style="font-family: sans-serif; color: #333; padding: 20px; background-color: #f9f9f9;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+      <h2 style="color: #4CAF50; margin-top: 0;">Welcome to Learnify.edu! 🎉</h2>
+      
+      <p style="color: #555; line-height: 1.5;">
+        We're excited to have you on board. Learnify.edu gives you access to interactive courses, student tools, and personalized learning tracks.
+      </p>
 
-    <p>If you did not register for this account, please ignore this email.</p>
-    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
-    <small style="color: #666;">This is a system generated notification from your Learnify.edu application.</small>
+      <p style="color: #555; line-height: 1.5;">
+        To get started and activate your account, please verify your email address:
+      </p>
+      
+      <div style="margin: 25px 0;">
+        <a href="{{ verification_url }}" 
+           style="display: inline-block; padding: 12px 24px; background-color: #4CAF50; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold;">
+           Verify Email & Activate Account
+        </a>
+      </div>
+
+      <p style="color: #777; font-size: 14px; line-height: 1.4;">
+        If you did not create an account on Learnify.edu, please ignore this email.
+      </p>
+      
+      <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;" />
+      
+      <small style="color: #888; font-size: 12px; display: block;">This is an automated notification from Learnify.edu.</small>
+    </div>
   </body>
 </html>
