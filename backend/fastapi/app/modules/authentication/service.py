@@ -23,6 +23,7 @@ from .exception import (
 from .repository import TokenRepository
 from .validation import (
   JWTInputParams,
+  PasswordResetReqeuest,
   Token,
   TokenAudience,
   TokenRefreshRequest,
@@ -205,3 +206,50 @@ class AuthService:
     )
 
     await send_email(to=email, subject="Verify your account", content=html_template)
+
+  def password_reset(self, payload: PasswordResetReqeuest, user_service: UserService) -> UserToken:
+    """Create new password reset token and store in database"""
+
+    db_user = user_service.filter_user({"email": payload.email})
+
+    if not db_user:
+      raise UserNotFoundError()
+
+    audience = TokenAudience(id=db_user.id, uuid=db_user.uuid)
+
+    payload = {
+      "jti": get_token_family_id(),
+      "aud": audience.uuid,
+    }
+
+    password_reset_token = self.generate_token(
+      JWTInputParams(**payload, type=TokenTypeEnum.PASSWORD_RESET)
+    )
+
+    db_token = self.save_token(
+      audience,
+      payload["jti"],
+      [(password_reset_token, TokenTypeEnum.PASSWORD_RESET)]
+    )
+
+    return db_token[0]
+
+
+  async def send_password_reset_email(self, token: UserToken, user_service: UserService) -> None:
+    """Send password reset email that contains link to user"""
+
+    db_user = user_service.get_by_id(token.user_id)
+
+    if not db_user:
+      raise UserNotFoundError()
+
+    password_reset_url = (
+      f"{env_config.base_url}/api/v1/authentication/password/update/{token.token}"
+    )
+
+    html_template = render_email_template(
+      template_name="password_reset.html",
+      context={"password_reset_url": password_reset_url},
+    )
+
+    await send_email(to=db_user.email, subject="Update password request", content=html_template)

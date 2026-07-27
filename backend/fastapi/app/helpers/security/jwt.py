@@ -33,6 +33,10 @@ def get_jwt_expiration(type: TokenTypeEnum, time: datetime) -> datetime:
       return time + timedelta(
         hours=jwt_config.email_verification_token_expire_hours
       )
+    case TokenTypeEnum.PASSWORD_RESET:
+      return time + timedelta(
+        minutes=jwt_config.password_reset_expire_minutes
+      )
     case _:
       raise ValueError("Error: Unhandled token type. Token generation is aborted!")
 

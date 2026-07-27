@@ -4,6 +4,7 @@ from app.modules.user.table import UserTable
 
 from .repository import UserRepository
 
+
 class UserService:
   def __init__(self, repository: UserRepository):
     self.repository = repository

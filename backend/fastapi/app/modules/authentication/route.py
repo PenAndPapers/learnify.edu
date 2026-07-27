@@ -4,7 +4,13 @@ from app.modules.user.dependency import UserServiceDep
 from app.modules.user.exception import UserNotFoundError
 
 from .dependency import AuthServiceDep
-from .validation import TokenRefreshRequest, TokenResponse, TokenValidateRequest
+from .exception import TokenInvalidFormatError
+from .validation import (
+  PasswordResetReqeuest,
+  TokenRefreshRequest,
+  TokenResponse,
+  TokenValidateRequest,
+)
 
 router = APIRouter(prefix="/api/v1/authentication", tags=["Authentication"])
 
@@ -35,13 +41,15 @@ def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: 
 
   user_id = token.user_id if token else None
 
-  if user_id:
-    user = user_service.verify_user(user_id)
+  if not user_id:
+    raise TokenInvalidFormatError()
 
-    if not user:
-      raise UserNotFoundError()
+  user = user_service.verify_user(user_id)
 
-    auth_service.revoke_tokens([token.token])
+  if not user:
+    raise UserNotFoundError()
+
+  auth_service.revoke_tokens([token.token])
 
   return {
     "message": "Account has been successfully activated. You can now log in to your account."
@@ -49,7 +57,7 @@ def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: 
 
 
 @router.post("/password/reset", response_model=None)
-def password_reset() -> None:
+async def password_reset(payload: PasswordResetReqeuest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
   """User has requested to update their password and system will send a link to update password
   
   TODO:
@@ -60,7 +68,18 @@ def password_reset() -> None:
     - prevent user to flood sending of email when they have unused and not expired RESET_PASSWORD token
     - send email to user with password update link
   """
-  pass
+  token = auth_service.password_reset(payload, user_service)
+
+  user_id = token.user_id if token else None
+
+  if not user_id:
+    raise TokenInvalidFormatError()
+
+  await auth_service.send_password_reset_email(token, user_service)
+
+  return {
+    "message": "Password reset link has been sent to your email."
+  }
 
 
 @router.post("/password/update", response_model=None)
@@ -73,5 +92,6 @@ def password_update() -> None:
     - password and confirm password should match
     - update user password in database using user's uuid from the token
     - send email to user with message that email has been updated
+    - remove the password reset token
   """
   pass

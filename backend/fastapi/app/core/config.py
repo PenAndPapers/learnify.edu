@@ -17,6 +17,7 @@ class SecurityConfig(BaseModel):
   access_token_expire_minutes: int
   refresh_token_expire_days: int
   email_verification_token_expire_hours: int
+  password_reset_expire_minutes: int
 
 
 class DatabaseConfig(BaseModel):
@@ -55,6 +56,7 @@ class EnvConfig(BaseSettings):
   access_token_expire_minutes: int = 30
   refresh_token_expire_days: int = 1
   email_verification_token_expire_hours: int = 24
+  password_reset_expire_minutes: int = 15
 
   postgres_host: str = "database"
   postgres_port: str = "5432"
@@ -99,6 +101,7 @@ def get_security_config() -> SecurityConfig:
     access_token_expire_minutes=env_config.access_token_expire_minutes,
     refresh_token_expire_days=env_config.refresh_token_expire_days,
     email_verification_token_expire_hours=env_config.email_verification_token_expire_hours,
+    password_reset_expire_minutes=env_config.password_reset_expire_minutes
   )
 
 
