@@ -7,6 +7,7 @@ from .dependency import AuthServiceDep
 from .exception import TokenInvalidFormatError
 from .validation import (
   PasswordResetRequest,
+  PasswordUpdateRequest,
   TokenRefreshRequest,
   TokenResponse,
   TokenValidateRequest,
@@ -59,6 +60,7 @@ def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: 
 @router.post("/password/reset", response_model=None)
 async def password_reset(payload: PasswordResetRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
   """Request a password reset link"""
+
   token = auth_service.password_reset(payload, user_service)
 
   user_id = token.user_id if token else None
@@ -74,7 +76,7 @@ async def password_reset(payload: PasswordResetRequest, auth_service: AuthServic
 
 
 @router.post("/password/update", response_model=None)
-def password_update() -> None:
+def password_update(payload: PasswordUpdateRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
   """Update user's password
   
   TODO:
@@ -85,4 +87,4 @@ def password_update() -> None:
     - send email to user with message that email has been updated
     - remove the password reset token
   """
-  pass
+  return None

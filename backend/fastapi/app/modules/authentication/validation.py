@@ -3,6 +3,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
+from app.helpers.security.password import ValidPassword
 from app.helpers.validators.token import is_valid_jwt_token_format
 
 
@@ -89,6 +90,17 @@ class TokenValidateRequest(BaseModel):
 
 class PasswordResetRequest(BaseModel):
   email: EmailStr
+
+
+class PasswordUpdateRequest(BaseModel):
+  token: str = Field(
+    ...,
+    min_length=1,
+    description="The token payload string to evaluate.",
+    examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."],
+  )
+  new_password: ValidPassword = Field(..., examples=["P@s$w0rd_"])
+  confirm_password: ValidPassword = Field(..., examples=["P@s$w0rd_"])
 
 
 class UserToken(BaseModel):
