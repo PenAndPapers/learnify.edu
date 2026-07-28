@@ -65,8 +65,8 @@ async def password_reset(payload: PasswordResetRequest, auth_service: AuthServic
     - validate if email exist
     - generate a jwt token with type of RESET_PASSWORD
     - set token validity for 15mins
-    - prevent user to flood sending of email when they have unused and not expired RESET_PASSWORD token
     - send email to user with password update link
+    - prevent user to flood sending of email when they have unused and not expired RESET_PASSWORD token
   """
   token = auth_service.password_reset(payload, user_service)
 

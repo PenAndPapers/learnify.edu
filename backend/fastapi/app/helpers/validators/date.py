@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timedelta
 
 
 def is_birth_date_valid_to_register(value: date | None) -> bool:
@@ -28,3 +28,11 @@ def validate_date_of_birth(value: date | None) -> date | None:
       "Invalid date of birth. User must be at least 10 years old and the date of birth cannot be in the future or before January 1, 1900."
     )
   return value
+
+
+def is_within_minutes(value: str, mins: int = 1) -> bool:
+  target_date = datetime.fromisoformat(value)
+
+  diff = datetime.now() - target_date
+
+  return timedelta(0) <= diff <= timedelta(minutes=mins)

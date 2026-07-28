@@ -5,3 +5,10 @@ class AppException(Exception):
   def __init__(self, message: str | None):
     self.message = message or "Error: An unexpected error occured"
     super().__init__(self.message)
+
+class RateLimitException(AppException):
+  status_code=429
+  error_code="RATE_LIMIT_EXCEEDED"
+
+  def __init__(self, message: str = "Please wait before making another request."):
+    super().__init__(message)

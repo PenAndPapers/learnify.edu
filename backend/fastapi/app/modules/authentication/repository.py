@@ -3,6 +3,8 @@ from datetime import UTC, datetime
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
+from app.core.validation import NonEmptyStr, PositiveInt
+
 from .exception import TokenNotFoundError, TokenRequiredError
 from .table import TokenTable
 from .validation import TokenTypeEnum, UserPairToken, UserToken
@@ -22,7 +24,7 @@ class TokenRepository:
 
     return [UserToken.model_validate(record) for record in records]
 
-  def get_by_token(self, token: str) -> TokenTable | None:
+  def get_by_token(self, token: NonEmptyStr) -> TokenTable | None:
     """Get a token record from the database by token string"""
 
     if not token:
@@ -32,7 +34,20 @@ class TokenRepository:
 
     return db_token
 
-  def get_auth_token_pair(self, access_token: str, refresh_token: str) -> UserPairToken:
+  def get_active_user_token_by_type(self, user_id: PositiveInt, token_type: TokenTypeEnum) -> TokenTable | None:
+    """Get lastest user active token by type"""
+    query = select(self.model).where(
+      self.model.user_id == user_id,
+      self.model.token_type == token_type,
+      self.model.is_revoked == False
+    ).order_by(self.model.created_at.desc())
+
+    result = self.db.scalars(query).first()
+
+    return result
+
+
+  def get_auth_token_pair(self, access_token: NonEmptyStr, refresh_token: NonEmptyStr) -> UserPairToken:
     """Get authentication pair token"""
 
     query = (
@@ -58,7 +73,7 @@ class TokenRepository:
 
     return UserPairToken(access_token=db_access_token, refresh_token=db_refresh_token)
 
-  def revoke_tokens(self, tokens: list[str] | None = None) -> None:
+  def revoke_tokens(self, tokens: list[NonEmptyStr] | None = None) -> None:
     """Update token to a revoke state"""
 
     if tokens is None or len(tokens) == 0:

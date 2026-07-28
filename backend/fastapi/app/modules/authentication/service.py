@@ -1,12 +1,14 @@
 import jwt
 
-from app.core.config import env_config
+from app.core.config import env_config, get_security_config
+from app.core.exception import RateLimitException
 from app.helpers.security.jwt import (
   decode_jwt,
   encode_jwt,
   get_jwt_claims,
   get_token_family_id,
 )
+from app.helpers.validators.date import is_within_minutes
 from app.modules.user.exception import UserNotFoundError
 from app.modules.user.service import UserService
 from app.utils.email.email import render_email_template, send_email
@@ -220,6 +222,12 @@ class AuthService:
 
     if not db_user:
       raise UserNotFoundError()
+
+    latest_password_reset_token = self.repository.get_active_user_token_by_type(db_user.id, TokenTypeEnum.PASSWORD_RESET)
+    password_reset_expire_minutes = get_security_config().password_reset_expire_minutes
+
+    if latest_password_reset_token and is_within_minutes(str(latest_password_reset_token.created_at), password_reset_expire_minutes):
+      raise RateLimitException("You have already requested a password reset recently. Please check your inbox or try again shortly.")
 
     audience = TokenAudience(id=db_user.id, uuid=db_user.uuid)
 
