@@ -3,7 +3,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, EmailStr, Field, field_validator
 
-from app.helpers.security.password import ValidPassword
+from app.helpers.types import ValidPassword
 from app.helpers.validators.token import is_valid_jwt_token_format
 
 

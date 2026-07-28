@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
-from app.core.validation import NonEmptyStr, PositiveInt
+from app.helpers.types import NonEmptyStr, PositiveInt
 
 from .exception import TokenNotFoundError, TokenRequiredError
 from .table import TokenTable

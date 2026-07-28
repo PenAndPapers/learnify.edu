@@ -1,14 +1,9 @@
 from datetime import date, datetime
 from enum import StrEnum
-from typing import Annotated
 
-from pydantic import AfterValidator, BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field
 
-from app.helpers.validators.date import validate_date_of_birth
-from app.helpers.validators.string import validate_phone_number
-
-ValidDateOfBirth = Annotated[date | None, AfterValidator(validate_date_of_birth)]
-ValidPhoneNumber = Annotated[str | None, AfterValidator(validate_phone_number)]
+from app.helpers.types import ValidDateOfBirth, ValidPhoneNumber, ValidPassword
 
 class UserTypeEnum(StrEnum):
   ENROLLEE = "ENROLLEE"
@@ -57,7 +52,7 @@ class CreateUser(BaseModel):
   """The data required for creating a user"""
 
   email: EmailStr = Field(..., examples=["johnny.smith@email.com"])
-  password: str = Field(..., min_length=8, examples=["P@s$w0rd_"])
+  password: ValidPassword = Field(..., examples=["P@s$w0rd_"])
   first_name: str = Field(..., min_length=1, max_length=100, examples=["Johnny"])
   last_name: str = Field(..., min_length=1, max_length=100, examples=["Smith"])
   phone_number: ValidPhoneNumber = Field(..., min_length=1, max_length=50, examples=["+123-2342-7890"])
