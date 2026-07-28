@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import StrEnum
 
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from app.helpers.types import ValidPassword
 from app.helpers.validators.token import is_valid_jwt_token_format
@@ -101,6 +101,12 @@ class PasswordUpdateRequest(BaseModel):
   )
   new_password: ValidPassword = Field(..., examples=["P@s$w0rd_"])
   confirm_password: ValidPassword = Field(..., examples=["P@s$w0rd_"])
+
+  @model_validator(mode="after")
+  def verify_passwords_match(self):
+    if self.new_password != self.confirm_password:
+      raise ValueError("Passwords do not match")
+    return self
 
 
 class UserToken(BaseModel):

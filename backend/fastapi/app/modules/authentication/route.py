@@ -4,12 +4,16 @@ from app.modules.user.dependency import UserServiceDep
 from app.modules.user.exception import UserNotFoundError
 
 from .dependency import AuthServiceDep
-from .exception import TokenInvalidFormatError
+from .exception import (
+  TokenInvalidFormatError,
+  TokenNotFoundError,
+)
 from .validation import (
   PasswordResetRequest,
   PasswordUpdateRequest,
   TokenRefreshRequest,
   TokenResponse,
+  TokenTypeEnum,
   TokenValidateRequest,
 )
 
@@ -83,8 +87,23 @@ def password_update(payload: PasswordUpdateRequest, auth_service: AuthServiceDep
     - validate the token is valid and not used or expired
     - validate user password input
     - password and confirm password should match
+    - encrypt the new password
     - update user password in database using user's uuid from the token
     - send email to user with message that email has been updated
-    - remove the password reset token
+    - revoke the password reset token
   """
-  return None
+
+  db_token = auth_service.validate_token(
+    TokenValidateRequest(token=payload.token, token_type=TokenTypeEnum.PASSWORD_RESET)
+  )
+
+  if not db_token:
+    raise TokenNotFoundError()
+
+  user_service.update_password(db_token.user_id, payload.new_password)
+  auth_service.revoke_tokens([payload.token])
+
+  return {
+    "message": "Password has been successfully updated!"
+  }
+

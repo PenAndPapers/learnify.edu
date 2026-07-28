@@ -3,7 +3,8 @@ from enum import StrEnum
 
 from pydantic import BaseModel, EmailStr, Field
 
-from app.helpers.types import ValidDateOfBirth, ValidPhoneNumber, ValidPassword
+from app.helpers.types import ValidDateOfBirth, ValidPassword, ValidPhoneNumber
+
 
 class UserTypeEnum(StrEnum):
   ENROLLEE = "ENROLLEE"

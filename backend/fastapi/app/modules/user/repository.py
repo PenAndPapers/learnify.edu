@@ -1,5 +1,8 @@
 
+from sqlalchemy import select
+
 from app.database import DatabaseDep
+from app.helpers.types import NonEmptyStr, PositiveInt
 
 from .table import UserTable
 
@@ -16,18 +19,34 @@ class UserRepository:
 
     return user
 
-  def get_by_id(self, user_id: int) -> UserTable | None:
+  def get_by_id(self, id: PositiveInt) -> UserTable | None:
     """Get a user by their ID and return the corresponding UserTable if found."""
 
-    user = self.db.query(self.model).filter_by(id=user_id).first()
+    query = select(self.model).where(self.model.id == id)
+    db_user = self.db.scalar(query)
+
+    return db_user
+
+  def update(self, user: UserTable) -> UserTable:
+    """Update"""
+    self.db.add(user)
+    self.db.commit()
+    self.db.refresh(user)
 
     return user
 
-  def verify_user(self, user: UserTable) -> UserTable | None:
+  def verify_user(self, user: UserTable) -> UserTable:
     """Verify the user by updating the is_verified field"""
 
     user.is_verified = True
-    self.db.commit()
-    self.db.refresh(user)
+    self.update(user)
+
+    return user
+
+  def update_password(self, user: UserTable, password: NonEmptyStr) -> UserTable:
+    """Update user password"""
+
+    user.password = password
+    self.update(user)
 
     return user

@@ -80,5 +80,12 @@ class VerificationLinkNotSentError(AppException):
   status_code=500
   error_code="VERIFICATION_LINK_NOT_SENT"
 
-  def __init__(self, message: str = "Error: Verification link not sent"):
+  def __init__(self, message: str = "Error: Verification link not sent."):
+    super().__init__(message)
+
+class PasswordMisMatchError(AppException):
+  status_code=500
+  error_code="PASSWORD_MISMATCH"
+
+  def __init__(self, message: str = "Error: Password do not match!"):
     super().__init__(message)

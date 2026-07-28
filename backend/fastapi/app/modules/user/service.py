@@ -1,7 +1,10 @@
 
+from app.helpers.security.password import hash_password
+from app.helpers.types import NonEmptyStr, PositiveInt
 from app.modules.user.exception import UserAlreadyVerifiedError, UserNotFoundError
 from app.modules.user.table import UserTable
 
+from .exception import UserNotFoundError
 from .repository import UserRepository
 
 
@@ -18,7 +21,7 @@ class UserService:
   def verify_user(self, user_id: int) -> UserTable | None:
     """Verify the user by updating the is_verified field in the database."""
 
-    user = self.repository.get_by_id(user_id)
+    user = self.get_by_id(user_id)
 
     if not user:
       raise UserNotFoundError()
@@ -27,3 +30,13 @@ class UserService:
       raise UserAlreadyVerifiedError()
 
     return self.repository.verify_user(user)
+
+  def update_password(self, id: PositiveInt, password: NonEmptyStr) -> UserTable | None:
+    """Update and employee account by UUID."""
+
+    db_user = self.get_by_id(id)
+
+    if not db_user:
+      raise UserNotFoundError()
+
+    self.repository.update_password(db_user, hash_password(str(password)))

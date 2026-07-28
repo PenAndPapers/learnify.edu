@@ -1,6 +1,7 @@
-from annotated_types import MinLen
 from datetime import date
 from typing import Annotated
+
+from annotated_types import MinLen
 from pydantic import Field, StringConstraints
 from pydantic.functional_validators import AfterValidator
 
