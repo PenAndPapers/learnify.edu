@@ -30,17 +30,22 @@ class TokenRepository:
     if not token:
       raise TokenRequiredError()
 
-    db_token = self.db.query(self.model).filter(self.model.token == token).first()
+    query = select(self.model).where(self.model.token == token)
+    db_token = self.db.scalar(query)
 
     return db_token
 
   def get_active_user_token_by_type(self, user_id: PositiveInt, token_type: TokenTypeEnum) -> TokenTable | None:
     """Get lastest user active token by type"""
-    query = select(self.model).where(
-      self.model.user_id == user_id,
-      self.model.token_type == token_type,
-      self.model.is_revoked == False
-    ).order_by(self.model.created_at.desc())
+    query = (
+      select(self.model)
+        .where(
+          self.model.user_id == user_id,
+          self.model.token_type == token_type,
+          self.model.is_revoked == False
+        )
+        .order_by(self.model.created_at.desc())
+    )
 
     result = self.db.scalars(query).first()
 

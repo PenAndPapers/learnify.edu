@@ -58,16 +58,7 @@ def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: 
 
 @router.post("/password/reset", response_model=None)
 async def password_reset(payload: PasswordResetRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
-  """User has requested to update their password and system will send a link to update password
-  
-  TODO:
-    - validate user input email
-    - validate if email exist
-    - generate a jwt token with type of RESET_PASSWORD
-    - set token validity for 15mins
-    - send email to user with password update link
-    - prevent user to flood sending of email when they have unused and not expired RESET_PASSWORD token
-  """
+  """Request a password reset link"""
   token = auth_service.password_reset(payload, user_service)
 
   user_id = token.user_id if token else None

@@ -226,6 +226,7 @@ class AuthService:
     latest_password_reset_token = self.repository.get_active_user_token_by_type(db_user.id, TokenTypeEnum.PASSWORD_RESET)
     password_reset_expire_minutes = get_security_config().password_reset_expire_minutes
 
+    # Prevent user from flooding sending of email using rate limit
     if latest_password_reset_token and is_within_minutes(str(latest_password_reset_token.created_at), password_reset_expire_minutes):
       raise RateLimitException("You have already requested a password reset recently. Please check your inbox or try again shortly.")
 
@@ -258,7 +259,7 @@ class AuthService:
       raise UserNotFoundError()
 
     password_reset_url = (
-      f"{env_config.base_url}/api/v1/authentication/password/update/{token.token}"
+      f"{env_config.base_url}/api/v1/authentication/password/update?token={token.token}"
     )
 
     html_template = render_email_template(
