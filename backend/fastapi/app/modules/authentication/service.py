@@ -14,6 +14,7 @@ from app.utils.email.email import render_email_template, send_email
 from .exception import (
   TokenExpiredError,
   TokenInvalidError,
+  TokenNotFoundError,
   TokenPairMismatchError,
   TokenRevokedError,
   TokenSessionMismatchError,
@@ -21,9 +22,10 @@ from .exception import (
   VerificationLinkNotSentError,
 )
 from .repository import TokenRepository
+from .table import TokenTable
 from .validation import (
   JWTInputParams,
-  PasswordResetReqeuest,
+  PasswordResetRequest,
   Token,
   TokenAudience,
   TokenRefreshRequest,
@@ -38,7 +40,7 @@ class AuthService:
   def __init__(self, repository: TokenRepository):
     self.repository = repository
 
-  def get_token(self, token_str: str) -> UserToken | None:
+  def get_by_token(self, token_str: str) -> TokenTable | None:
     """Get a token from the database by its token string."""
     return self.repository.get_by_token(token_str)
 
@@ -60,6 +62,7 @@ class AuthService:
     family_id: str,
     tokens: list[tuple[Token, TokenTypeEnum]],
   ) -> list[UserToken]:
+    """Create a list of user token and save to database"""
     token_records = [
       UserToken(
         **token_obj.model_dump(),
@@ -101,7 +104,10 @@ class AuthService:
     if payload.get("type") != token.token_type:
       raise TokenTypeMismatchError()
 
-    db_token = self.get_token(token.token)
+    db_token = self.get_by_token(token.token)
+
+    if not db_token:
+      raise TokenNotFoundError()
 
     if db_token.is_revoked:
       raise TokenRevokedError()
@@ -113,7 +119,7 @@ class AuthService:
   ) -> TokenResponse:
     """Refereshes the given access and refresh tokens and returns new tokens if valid."""
 
-    db_tokens = self.repository.get_by_tokens(token.access_token, token.refresh_token)
+    db_tokens = self.repository.get_auth_token_pair(token.access_token, token.refresh_token)
     access_token = db_tokens.access_token
     refresh_token = db_tokens.refresh_token
 
@@ -129,7 +135,7 @@ class AuthService:
     if access_token.family_id != refresh_token.family_id:
       raise TokenPairMismatchError()
 
-    db_user = user_service.filter_user({"id": access_token.user_id})
+    db_user = user_service.get_by_id(access_token.user_id)
 
     if db_user is None:
       raise UserNotFoundError()
@@ -207,7 +213,7 @@ class AuthService:
 
     await send_email(to=email, subject="Verify your account", content=html_template)
 
-  def password_reset(self, payload: PasswordResetReqeuest, user_service: UserService) -> UserToken:
+  def password_reset(self, payload: PasswordResetRequest, user_service: UserService) -> UserToken:
     """Create new password reset token and store in database"""
 
     db_user = user_service.filter_user({"email": payload.email})

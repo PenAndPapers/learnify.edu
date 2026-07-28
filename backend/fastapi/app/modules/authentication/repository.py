@@ -22,7 +22,7 @@ class TokenRepository:
 
     return [UserToken.model_validate(record) for record in records]
 
-  def get_by_token(self, token: str) -> UserToken:
+  def get_by_token(self, token: str) -> TokenTable | None:
     """Get a token record from the database by token string"""
 
     if not token:
@@ -30,13 +30,10 @@ class TokenRepository:
 
     db_token = self.db.query(self.model).filter(self.model.token == token).first()
 
-    if not db_token:
-      raise TokenNotFoundError()
+    return db_token
 
-    return UserToken.model_validate(db_token)
-
-  def get_by_tokens(self, access_token: str, refresh_token: str) -> UserPairToken:
-    """Get multiple token records from the database by a list of token strings"""
+  def get_auth_token_pair(self, access_token: str, refresh_token: str) -> UserPairToken:
+    """Get authentication pair token"""
 
     query = (
       select(self.model)

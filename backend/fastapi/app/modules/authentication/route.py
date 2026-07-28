@@ -6,7 +6,7 @@ from app.modules.user.exception import UserNotFoundError
 from .dependency import AuthServiceDep
 from .exception import TokenInvalidFormatError
 from .validation import (
-  PasswordResetReqeuest,
+  PasswordResetRequest,
   TokenRefreshRequest,
   TokenResponse,
   TokenValidateRequest,
@@ -57,7 +57,7 @@ def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: 
 
 
 @router.post("/password/reset", response_model=None)
-async def password_reset(payload: PasswordResetReqeuest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
+async def password_reset(payload: PasswordResetRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
   """User has requested to update their password and system will send a link to update password
   
   TODO:

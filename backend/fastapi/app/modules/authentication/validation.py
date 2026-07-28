@@ -87,7 +87,7 @@ class TokenValidateRequest(BaseModel):
       raise ValueError("Invalid JWT token format")
     return value
 
-class PasswordResetReqeuest(BaseModel):
+class PasswordResetRequest(BaseModel):
   email: EmailStr
 
 
