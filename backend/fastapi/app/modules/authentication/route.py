@@ -43,7 +43,7 @@ def refresh_token(
   return token
 
 
-@router.get("/verify_token/{token_code}", response_model=MessageResponse)
+@router.get("/verify/{token_code}", response_model=MessageResponse)
 def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: UserServiceDep) -> MessageResponse:
   """User verify their account by clicking the verification link sent to their email."""
 

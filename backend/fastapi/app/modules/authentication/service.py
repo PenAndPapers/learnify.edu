@@ -215,7 +215,7 @@ class AuthService:
       raise VerificationLinkNotSentError()
 
     verification_url = (
-      f"{env_config.base_url}/api/v1/authentication/verify_token/{token}"
+      f"{env_config.base_url}/api/v1/authentication/verify/{token}"
     )
 
     html_template = render_email_template(
