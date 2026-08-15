@@ -27,26 +27,26 @@ class UserRepository:
 
     return db_user
 
-  def update(self, user: UserTable) -> UserTable:
+  def update(self, user: UserTable) -> UserTable | None:
     """Update"""
+
+    if not user:
+      return None
+
     self.db.add(user)
     self.db.commit()
     self.db.refresh(user)
 
     return user
 
-  def verify_user(self, user: UserTable) -> UserTable:
+  def verify_user(self, user: UserTable) -> UserTable | None:
     """Verify the user by updating the is_verified field"""
 
     user.is_verified = True
-    self.update(user)
+    return self.update(user)
 
-    return user
-
-  def update_password(self, user: UserTable, password: NonEmptyStr) -> UserTable:
+  def update_password(self, user: UserTable, password: NonEmptyStr) -> UserTable | None:
     """Update user password"""
 
     user.password = password
-    self.update(user)
-
-    return user
+    return self.update(user)

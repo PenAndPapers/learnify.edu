@@ -4,7 +4,6 @@ from app.helpers.types import NonEmptyStr, PositiveInt
 from app.modules.user.exception import UserAlreadyVerifiedError, UserNotFoundError
 from app.modules.user.table import UserTable
 
-from .exception import UserNotFoundError
 from .repository import UserRepository
 
 
@@ -39,4 +38,4 @@ class UserService:
     if not db_user:
       raise UserNotFoundError()
 
-    self.repository.update_password(db_user, hash_password(str(password)))
+    return self.repository.update_password(db_user, hash_password(str(password)))

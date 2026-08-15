@@ -80,18 +80,8 @@ async def password_reset(payload: PasswordResetRequest, auth_service: AuthServic
 
 
 @router.post("/password/update", response_model=None)
-def password_update(payload: PasswordUpdateRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
-  """Update user's password
-  
-  TODO:
-    - validate the token is valid and not used or expired
-    - validate user password input
-    - password and confirm password should match
-    - encrypt the new password
-    - update user password in database using user's uuid from the token
-    - send email to user with message that email has been updated
-    - revoke the password reset token
-  """
+async def password_update(payload: PasswordUpdateRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
+  """Update user's password"""
 
   db_token = auth_service.validate_token(
     TokenValidateRequest(token=payload.token, token_type=TokenTypeEnum.PASSWORD_RESET)
@@ -100,8 +90,17 @@ def password_update(payload: PasswordUpdateRequest, auth_service: AuthServiceDep
   if not db_token:
     raise TokenNotFoundError()
 
-  user_service.update_password(db_token.user_id, payload.new_password)
-  auth_service.revoke_tokens([payload.token])
+  db_user = user_service.update_password(db_token.user_id, payload.new_password)
+
+  password_reset_tokens = auth_service.get_user_tokens_by_type(db_token.user_id, TokenTypeEnum.PASSWORD_RESET)
+  unused_tokens = [token.token for token in password_reset_tokens if not token.is_revoked]
+
+  revoked_tokens = auth_service.revoke_tokens(unused_tokens)
+
+  if not revoked_tokens:
+    raise TokenNotFoundError()
+
+  await auth_service.send_password_updated_email(db_user)
 
   return {
     "message": "Password has been successfully updated!"

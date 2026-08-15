@@ -8,9 +8,11 @@ from app.helpers.security.jwt import (
   get_jwt_claims,
   get_token_family_id,
 )
+from app.helpers.types import NonEmptyStr
 from app.helpers.validators.date import is_within_minutes
 from app.modules.user.exception import UserNotFoundError
 from app.modules.user.service import UserService
+from app.modules.user.table import UserTable
 from app.utils.email.email import render_email_template, send_email
 
 from .exception import (
@@ -46,9 +48,13 @@ class AuthService:
     """Get a token from the database by its token string."""
     return self.repository.get_by_token(token_str)
 
-  def revoke_tokens(self, tokens: list[str] | None = None) -> None:
+  def revoke_tokens(self, tokens: list[str] | None = None) -> list[NonEmptyStr]:
     """Revoke the given tokens by updating their is_revoked field in the database."""
-    self.repository.revoke_tokens(tokens)
+    return self.repository.revoke_tokens(tokens)
+
+  def get_user_tokens_by_type(self, user_id: int, token_type: TokenTypeEnum) -> list[TokenTable] | None:
+    """Get user tokens by type from the database."""
+    return self.repository.get_user_tokens_by_type(user_id, token_type)
 
   def generate_token(self, payload: JWTInputParams) -> Token:
     """Generates a JWT token with the given audience, jti, and token type."""
@@ -223,7 +229,7 @@ class AuthService:
     if not db_user:
       raise UserNotFoundError()
 
-    latest_password_reset_token = self.repository.get_active_user_token_by_type(db_user.id, TokenTypeEnum.PASSWORD_RESET)
+    latest_password_reset_token = self.repository.get_user_token_by_type(db_user.id, TokenTypeEnum.PASSWORD_RESET)
     password_reset_expire_minutes = get_security_config().password_reset_expire_minutes
 
     # Prevent user from flooding sending of email using rate limit
@@ -268,3 +274,17 @@ class AuthService:
     )
 
     await send_email(to=db_user.email, subject="Update password request", content=html_template)
+
+
+  async def send_password_updated_email(self, user: UserTable) -> None:
+    """Send email to user that their password has been updated"""
+
+    if not user:
+      raise UserNotFoundError()
+
+    html_template = render_email_template(
+      template_name="password_updated.html",
+      context={"user": user},
+    )
+
+    await send_email(to=user.email, subject="Password updated", content=html_template)

@@ -15,6 +15,28 @@ class TokenRepository:
     self.db = db
     self.model = TokenTable
 
+  def get_active_user_tokens(
+      self,
+      user_id: PositiveInt,
+      token_type: TokenTypeEnum,
+      limit: int | None = None,
+  ) -> list[TokenTable]:
+    """Get active user tokens with optional limit."""
+    query = (
+        select(self.model)
+        .where(
+            self.model.user_id == user_id,
+            self.model.token_type == token_type,
+            self.model.is_revoked.is_(False),
+        )
+        .order_by(self.model.created_at.desc())
+    )
+
+    if limit is not None:
+      query = query.limit(limit)
+
+    return list(self.db.scalars(query).all())
+
   def create(self, tokens: list[UserToken]) -> list[UserToken]:
     """Store authentication tokens in the database"""
 
@@ -35,22 +57,15 @@ class TokenRepository:
 
     return db_token
 
-  def get_active_user_token_by_type(self, user_id: PositiveInt, token_type: TokenTypeEnum) -> TokenTable | None:
-    """Get lastest user active token by type"""
-    query = (
-      select(self.model)
-        .where(
-          self.model.user_id == user_id,
-          self.model.token_type == token_type,
-          self.model.is_revoked == False
-        )
-        .order_by(self.model.created_at.desc())
-    )
+  def get_user_token_by_type(self, user_id: PositiveInt, token_type: TokenTypeEnum) -> TokenTable | None:
+    """Get user lastest active token by type"""
+    query = self.get_active_user_tokens(user_id, token_type, limit=1)
+    return query[0] if query else None
 
-    result = self.db.scalars(query).first()
 
-    return result
-
+  def get_user_tokens_by_type(self, user_id: PositiveInt, token_type: TokenTypeEnum) -> list[TokenTable] | None:
+    """Get user active tokens by type"""
+    return self.get_active_user_tokens(user_id, token_type)
 
   def get_auth_token_pair(self, access_token: NonEmptyStr, refresh_token: NonEmptyStr) -> UserPairToken:
     """Get authentication pair token"""
@@ -78,14 +93,17 @@ class TokenRepository:
 
     return UserPairToken(access_token=db_access_token, refresh_token=db_refresh_token)
 
-  def revoke_tokens(self, tokens: list[NonEmptyStr] | None = None) -> None:
+  def revoke_tokens(self, tokens: list[NonEmptyStr] | None = None) -> list[NonEmptyStr]:
     """Update token to a revoke state"""
 
-    if tokens is None or len(tokens) == 0:
+    if not tokens:
       raise TokenRequiredError()
 
-    self.db.execute(
+    query = (
       update(self.model)
       .where(self.model.token.in_(tokens))
       .values(is_revoked=True, deleted_at=datetime.now(UTC))
+      .returning(self.model.token)
     )
+
+    return list(self.db.scalars(query).all())
