@@ -2,7 +2,7 @@
 from app.database import DatabaseDep
 
 from .table import EnrolleeTable
-from .validation import CreateEnrollee
+from .validation import CreateEnrollee, EnrolleeApplicationStatusEnum
 
 
 class EnrolleeResitory:
@@ -22,3 +22,16 @@ class EnrolleeResitory:
     enrollee = self.db.query(self.model).filter(self.model.uuid == uuid).first()
 
     return enrollee if enrollee else None
+
+  def update_enrollee_status(self, enrollee: EnrolleeTable, status: EnrolleeApplicationStatusEnum) -> EnrolleeTable | None:
+    """Update enrollee application status by UUID."""
+
+    if not enrollee:
+      return None
+
+    enrollee.application_status = status
+    self.db.add(enrollee)
+    self.db.commit()
+    self.db.refresh(enrollee)
+
+    return enrollee

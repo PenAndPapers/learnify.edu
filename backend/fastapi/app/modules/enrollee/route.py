@@ -4,7 +4,7 @@ from app.modules.authentication.dependency import AuthServiceDep
 from app.modules.authentication.validation import TokenAudience, TokenResponse
 
 from .dependency import EnrolleeServiceDep
-from .validation import CreateEnrollee, EnrolleeResponse
+from .validation import CreateEnrollee, EnrolleeApplicationStatusEnum, EnrolleeResponse
 
 router = APIRouter(prefix="/api/v1/enrolle/application", tags=["Enrollee"])
 
@@ -45,12 +45,12 @@ def enrollee_application_profile(uuid: str, enrolle_service: EnrolleeServiceDep)
   return enrollee
 
 
-@router.patch("/verify/{uuid}", response_model=None)
-def enrollee_application_update() -> None:
+@router.patch("/update/status/{uuid}", response_model=None)
+def enrollee_application_update(uuid: str, status: EnrolleeApplicationStatusEnum, enrolle_service: EnrolleeServiceDep) -> None:
   """School admin can approve or reject the enrollee application.
   If the application is approved, the enrollee can take the examination for the application.
   """
-  pass
+  return enrolle_service.update_enrollee_status(uuid, status)
 
 
 @router.get("/exam/questions/", response_model=None)

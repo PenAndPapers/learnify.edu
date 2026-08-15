@@ -42,3 +42,13 @@ class EnrolleeService:
       raise EnrolleeNotFoundException()
 
     return enrollee
+
+
+  def update_enrollee_status(self, uuid: str, status: EnrolleeApplicationStatusEnum) -> EnrolleeTable | None:
+    """Update the application status of an enrollee by UUID."""
+
+    enrollee = self.get_enrollee(uuid)
+
+    updated_enrollee = self.repository.update_enrollee_status(enrollee, status)
+
+    return updated_enrollee
