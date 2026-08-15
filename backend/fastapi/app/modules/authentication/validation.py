@@ -46,7 +46,13 @@ class TokenResponse(BaseModel):
   expires_at: datetime
 
 
-class TokenRefreshRequest(BaseModel):
+class ValidTokenResponse(BaseModel):
+  is_valid: bool
+  token_type: TokenTypeEnum | None = None
+  token: str | None = None
+  expires_at: datetime | None = None
+
+class RefreshTokenRequest(BaseModel):
   access_token: str = Field(
     ..., # ... means the field is strictly REQUIRED
     min_length=1,
@@ -68,7 +74,7 @@ class TokenRefreshRequest(BaseModel):
     return value
 
 
-class TokenValidateRequest(BaseModel):
+class ValidateTokenRequest(BaseModel):
   token: str = Field(
     ...,
     min_length=1,
@@ -118,8 +124,3 @@ class UserToken(BaseModel):
   expires_at: datetime
 
   model_config = {"from_attributes": True}
-
-
-class UserPairToken(BaseModel):
-  access_token: UserToken
-  refresh_token: UserToken

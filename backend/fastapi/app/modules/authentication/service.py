@@ -30,13 +30,13 @@ from .table import TokenTable
 from .validation import (
   JWTInputParams,
   PasswordResetRequest,
+  RefreshTokenRequest,
   Token,
   TokenAudience,
-  TokenRefreshRequest,
   TokenResponse,
   TokenTypeEnum,
-  TokenValidateRequest,
   UserToken,
+  ValidateTokenRequest,
 )
 
 
@@ -69,7 +69,7 @@ class AuthService:
     audience: TokenAudience,
     family_id: str,
     tokens: list[tuple[Token, TokenTypeEnum]],
-  ) -> list[UserToken]:
+  ) -> list[TokenTable]:
     """Create a list of user token and save to database"""
     token_records = [
       UserToken(
@@ -90,14 +90,14 @@ class AuthService:
   def verify_account(self, token_code: str) -> UserToken | None:
     """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
 
-    validated_token = self.validate_token(TokenValidateRequest(token=token_code, token_type=TokenTypeEnum.EMAIL_VERIFICATION))
+    validated_token = self.validate_token(ValidateTokenRequest(token=token_code, token_type=TokenTypeEnum.EMAIL_VERIFICATION))
 
     if validated_token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
       raise TokenInvalidError()
 
     return validated_token
 
-  def validate_token(self, token: TokenValidateRequest) -> UserToken | None:
+  def validate_token(self, token: ValidateTokenRequest) -> TokenTable | None:
     """Validates the given JWT token and returns the corresponding UserToken from the database if valid."""
 
     try:
@@ -123,7 +123,7 @@ class AuthService:
     return db_token
 
   def refresh_token(
-    self, token: TokenRefreshRequest, user_service: UserService
+    self, token: RefreshTokenRequest, user_service: UserService
   ) -> TokenResponse:
     """Refereshes the given access and refresh tokens and returns new tokens if valid."""
 

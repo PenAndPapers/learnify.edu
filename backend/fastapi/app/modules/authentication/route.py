@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.helpers.types import MessageResponse
 from app.modules.user.dependency import UserServiceDep
 from app.modules.user.exception import UserNotFoundError
 
@@ -11,25 +12,29 @@ from .exception import (
 from .validation import (
   PasswordResetRequest,
   PasswordUpdateRequest,
-  TokenRefreshRequest,
+  RefreshTokenRequest,
   TokenResponse,
   TokenTypeEnum,
-  TokenValidateRequest,
+  ValidateTokenRequest,
+  ValidTokenResponse,
 )
 
 router = APIRouter(prefix="/api/v1/authentication", tags=["Authentication"])
 
 
-@router.post("/validate_token", response_model=bool)
-def validate_token(token: TokenValidateRequest, auth_service: AuthServiceDep) -> bool:
+@router.post("/validate_token", response_model=ValidTokenResponse)
+def validate_token(token: ValidateTokenRequest, auth_service: AuthServiceDep) -> ValidTokenResponse:
   token = auth_service.validate_token(token)
 
-  return token is not None
+  if not token:
+    raise TokenNotFoundError()
+
+  return ValidTokenResponse(is_valid=True, token_type=token.token_type, token=token.token, expires_at=token.expires_at)
 
 
 @router.post("/refresh_token", response_model=TokenResponse)
 def refresh_token(
-  token: TokenRefreshRequest,
+  token: RefreshTokenRequest,
   auth_service: AuthServiceDep,
   user_service: UserServiceDep,
 ) -> TokenResponse:
@@ -38,8 +43,8 @@ def refresh_token(
   return token
 
 
-@router.get("/verify_token/{token_code}", response_model=None)
-def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
+@router.get("/verify_token/{token_code}", response_model=MessageResponse)
+def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: UserServiceDep) -> MessageResponse:
   """User verify their account by clicking the verification link sent to their email."""
 
   token = auth_service.verify_account(token_code)
@@ -54,15 +59,18 @@ def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: 
   if not user:
     raise UserNotFoundError()
 
-  auth_service.revoke_tokens([token.token])
+  revoked_tokens = auth_service.revoke_tokens([token.token])
 
-  return {
-    "message": "Account has been successfully activated. You can now log in to your account."
-  }
+  if not revoked_tokens:
+    raise TokenNotFoundError()
+
+  return MessageResponse(
+    message="Account has been successfully activated. You can now log in to your account."
+  )
 
 
-@router.post("/password/reset", response_model=None)
-async def password_reset(payload: PasswordResetRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
+@router.post("/password/reset", response_model=MessageResponse)
+async def password_reset(payload: PasswordResetRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> MessageResponse:
   """Request a password reset link"""
 
   token = auth_service.password_reset(payload, user_service)
@@ -74,17 +82,17 @@ async def password_reset(payload: PasswordResetRequest, auth_service: AuthServic
 
   await auth_service.send_password_reset_email(token, user_service)
 
-  return {
-    "message": "Password reset link has been sent to your email."
-  }
+  return MessageResponse(
+    message="Password reset link has been sent to your email."
+  )
 
 
-@router.post("/password/update", response_model=None)
-async def password_update(payload: PasswordUpdateRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> None:
+@router.post("/password/update", response_model=MessageResponse)
+async def password_update(payload: PasswordUpdateRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> MessageResponse:
   """Update user's password"""
 
   db_token = auth_service.validate_token(
-    TokenValidateRequest(token=payload.token, token_type=TokenTypeEnum.PASSWORD_RESET)
+    ValidateTokenRequest(token=payload.token, token_type=TokenTypeEnum.PASSWORD_RESET)
   )
 
   if not db_token:
@@ -102,7 +110,7 @@ async def password_update(payload: PasswordUpdateRequest, auth_service: AuthServ
 
   await auth_service.send_password_updated_email(db_user)
 
-  return {
-    "message": "Password has been successfully updated!"
-  }
+  return MessageResponse(
+    message="Password has been successfully updated!"
+  )
 

@@ -37,14 +37,14 @@ class TokenRepository:
 
     return list(self.db.scalars(query).all())
 
-  def create(self, tokens: list[UserToken]) -> list[UserToken]:
+  def create(self, tokens: list[UserToken]) -> list[TokenTable]:
     """Store authentication tokens in the database"""
 
     records = [self.model(**token.model_dump()) for token in tokens]
 
     self.db.add_all(records)
 
-    return [UserToken.model_validate(record) for record in records]
+    return records
 
   def get_token(self, token: NonEmptyStr) -> TokenTable | None:
     """Get a token record from the database by token string"""
