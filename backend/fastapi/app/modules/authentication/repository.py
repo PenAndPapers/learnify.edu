@@ -1,13 +1,13 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import or_, select, update
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from app.helpers.types import NonEmptyStr, PositiveInt
 
-from .exception import TokenNotFoundError, TokenRequiredError
+from .exception import TokenRequiredError
 from .table import TokenTable
-from .validation import TokenTypeEnum, UserPairToken, UserToken
+from .validation import TokenTypeEnum, UserToken
 
 
 class TokenRepository:
@@ -46,7 +46,7 @@ class TokenRepository:
 
     return [UserToken.model_validate(record) for record in records]
 
-  def get_by_token(self, token: NonEmptyStr) -> TokenTable | None:
+  def get_token(self, token: NonEmptyStr) -> TokenTable | None:
     """Get a token record from the database by token string"""
 
     if not token:
@@ -57,41 +57,28 @@ class TokenRepository:
 
     return db_token
 
+  def get_token_by_values(self, tokens: list[NonEmptyStr]) -> list[TokenTable] | None:
+    """Get a list of token records from the database by token strings"""
+
+    if not tokens:
+      raise TokenRequiredError()
+
+    query = (select(self.model)
+      .where(self.model.token.in_(tokens))
+      .limit(len(tokens))
+    )
+    db_tokens = self.db.scalars(query).all()
+
+    return db_tokens
+
   def get_user_token_by_type(self, user_id: PositiveInt, token_type: TokenTypeEnum) -> TokenTable | None:
     """Get user lastest active token by type"""
     query = self.get_active_user_tokens(user_id, token_type, limit=1)
     return query[0] if query else None
 
-
   def get_user_tokens_by_type(self, user_id: PositiveInt, token_type: TokenTypeEnum) -> list[TokenTable] | None:
     """Get user active tokens by type"""
     return self.get_active_user_tokens(user_id, token_type)
-
-  def get_auth_token_pair(self, access_token: NonEmptyStr, refresh_token: NonEmptyStr) -> UserPairToken:
-    """Get authentication pair token"""
-
-    query = (
-      select(self.model)
-      .where(
-        or_(
-          (self.model.token == access_token) & (self.model.token_type == TokenTypeEnum.ACCESS),
-          (self.model.token == refresh_token) & (self.model.token_type == TokenTypeEnum.REFRESH),
-        )
-      )
-    )
-    db_tokens = self.db.scalars(query).all()
-
-    if not db_tokens or len(db_tokens) != 2:
-        raise TokenNotFoundError()
-
-    db_access_token = next((token for token in db_tokens if token.token_type == TokenTypeEnum.ACCESS), None)
-    db_refresh_token = next((token for token in db_tokens if token.token_type == TokenTypeEnum.REFRESH), None)
-
-    # Ensures that both tokens are found otherwise we raise error
-    if not db_access_token or not db_refresh_token:
-      raise TokenNotFoundError()
-
-    return UserPairToken(access_token=db_access_token, refresh_token=db_refresh_token)
 
   def revoke_tokens(self, tokens: list[NonEmptyStr] | None = None) -> list[NonEmptyStr]:
     """Update token to a revoke state"""

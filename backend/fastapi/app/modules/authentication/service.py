@@ -46,7 +46,7 @@ class AuthService:
 
   def get_by_token(self, token_str: str) -> TokenTable | None:
     """Get a token from the database by its token string."""
-    return self.repository.get_by_token(token_str)
+    return self.repository.get_token(token_str)
 
   def revoke_tokens(self, tokens: list[str] | None = None) -> list[NonEmptyStr]:
     """Revoke the given tokens by updating their is_revoked field in the database."""
@@ -127,9 +127,13 @@ class AuthService:
   ) -> TokenResponse:
     """Refereshes the given access and refresh tokens and returns new tokens if valid."""
 
-    db_tokens = self.repository.get_auth_token_pair(token.access_token, token.refresh_token)
-    access_token = db_tokens.access_token
-    refresh_token = db_tokens.refresh_token
+    db_tokens = self.repository.get_token_by_values([token.access_token, token.refresh_token])
+    access_token = next((token for token in db_tokens if token.token_type == TokenTypeEnum.ACCESS), None)
+    refresh_token = next((token for token in db_tokens if token.token_type == TokenTypeEnum.REFRESH), None)
+
+    # check that both access and refresh token are found in the database
+    if not access_token or not refresh_token:
+      raise TokenNotFoundError()
 
     # check that token are not revoked before creating a new one
     if access_token.is_revoked or refresh_token.is_revoked:
