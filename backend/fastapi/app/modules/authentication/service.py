@@ -40,7 +40,7 @@ from .validation import (
 )
 
 
-class AuthService:
+class TokenService:
   def __init__(self, repository: TokenRepository):
     self.repository = repository
 
@@ -52,17 +52,21 @@ class AuthService:
 
     return Token(token=token, expires_at=claims.exp)
 
-  def get_by_token(self, token_str: str) -> TokenTable | None:
+  def get_by_token(self, token: NonEmptyStr) -> TokenTable | None:
     """Get a token from the database by its token string."""
-    return self.repository.get_token(token_str)
+    return self.repository.get_token(token)
 
-  def revoke_tokens(self, tokens: list[str] | None = None) -> list[NonEmptyStr]:
+  def get_user_token_by_type(self, user_id: int, token_type: TokenTypeEnum) -> TokenTable | None:
+    """Get the latest user token of a specific type from the database."""
+    return self.repository.get_user_tokens_by_type(user_id, token_type)
+
+  def get_token_by_values(self, tokens: list[NonEmptyStr]) -> list[TokenTable] | None:
+    """Get a list of token records from the database by token strings"""
+    return self.repository.get_token_by_values(tokens)
+
+  def revoke_tokens(self, tokens: list[NonEmptyStr] | None = None) -> list[NonEmptyStr]:
     """Revoke the given tokens by updating their is_revoked field in the database."""
     return self.repository.revoke_tokens(tokens)
-
-  def get_user_tokens_by_type(self, user_id: int, token_type: TokenTypeEnum) -> list[TokenTable] | None:
-    """Get user tokens by type from the database."""
-    return self.repository.get_user_tokens_by_type(user_id, token_type)
 
   def save_token(
     self,
@@ -71,7 +75,7 @@ class AuthService:
     tokens: list[tuple[Token, TokenTypeEnum]],
   ) -> list[TokenTable]:
     """Create a list of user token and save to database"""
-    
+
     token_records = [
       UserToken(
         **token_obj.model_dump(),
@@ -87,6 +91,11 @@ class AuthService:
     self.repository.db.flush()
 
     return db_tokens
+
+
+class AuthService:
+  def __init__(self, token_service: TokenService):
+    self.token_service = token_service
 
   def verify_account(self, token_code: str) -> UserToken | None:
     """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
@@ -113,7 +122,7 @@ class AuthService:
     if payload.get("type") != token.token_type:
       raise TokenTypeMismatchError()
 
-    db_token = self.get_by_token(token.token)
+    db_token = self.token_service.get_by_token(token.token)
 
     if not db_token:
       raise TokenNotFoundError()
@@ -131,14 +140,14 @@ class AuthService:
       "aud": audience.uuid,
     }
 
-    access_token = self.generate_token(
+    access_token = self.token_service.generate_token(
       JWTInputParams(**payload, type=TokenTypeEnum.ACCESS)
     )
-    refresh_token = self.generate_token(
+    refresh_token = self.token_service.generate_token(
       JWTInputParams(**payload, type=TokenTypeEnum.REFRESH)
     )
 
-    self.save_token(
+    self.token_service.save_token(
       audience,
       payload["jti"],
       [(access_token, TokenTypeEnum.ACCESS), (refresh_token, TokenTypeEnum.REFRESH)],
@@ -155,7 +164,7 @@ class AuthService:
   ) -> TokenResponse:
     """Refereshes the given access and refresh tokens and returns new tokens if valid."""
 
-    db_tokens = self.repository.get_token_by_values([token.access_token, token.refresh_token])
+    db_tokens = self.token_service.get_token_by_values([token.access_token, token.refresh_token])
     access_token = next((token for token in db_tokens if token.token_type == TokenTypeEnum.ACCESS), None)
     refresh_token = next((token for token in db_tokens if token.token_type == TokenTypeEnum.REFRESH), None)
 
@@ -184,8 +193,8 @@ class AuthService:
       TokenAudience(id=access_token.user_id, uuid=db_user.uuid)
     )
 
-    self.revoke_tokens([access_token.token, refresh_token.token])
-    self.repository.db.flush()
+    self.token_service.revoke_tokens([access_token.token, refresh_token.token])
+    self.token_service.repository.db.flush()
 
     return new_token
 
@@ -197,11 +206,11 @@ class AuthService:
       "aud": audience.uuid,
     }
 
-    email_verification_token = self.generate_token(
+    email_verification_token = self.token_service.generate_token(
       JWTInputParams(**payload, type=TokenTypeEnum.EMAIL_VERIFICATION)
     )
 
-    self.save_token(
+    self.token_service.save_token(
       audience,
       payload["jti"],
       [(email_verification_token, TokenTypeEnum.EMAIL_VERIFICATION)],
@@ -234,7 +243,7 @@ class AuthService:
     if not db_user:
       raise UserNotFoundError()
 
-    latest_password_reset_token = self.repository.get_user_token_by_type(db_user.id, TokenTypeEnum.PASSWORD_RESET)
+    latest_password_reset_token = self.token_service.get_user_token_by_type(db_user.id, TokenTypeEnum.PASSWORD_RESET)
     password_reset_expire_minutes = get_security_config().password_reset_expire_minutes
 
     # Prevent user from flooding sending of email using rate limit
@@ -248,11 +257,11 @@ class AuthService:
       "aud": audience.uuid,
     }
 
-    password_reset_token = self.generate_token(
+    password_reset_token = self.token_service.generate_token(
       JWTInputParams(**payload, type=TokenTypeEnum.PASSWORD_RESET)
     )
 
-    db_token = self.save_token(
+    db_token = self.token_service.save_token(
       audience,
       payload["jti"],
       [(password_reset_token, TokenTypeEnum.PASSWORD_RESET)]

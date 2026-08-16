@@ -5,7 +5,7 @@ from fastapi import Depends
 from app.database import DatabaseDep
 
 from .repository import TokenRepository
-from .service import AuthService
+from .service import AuthService, TokenService
 
 
 def get_token_repository(db: DatabaseDep) -> TokenRepository:
@@ -15,8 +15,14 @@ def get_token_repository(db: DatabaseDep) -> TokenRepository:
 TokenRepositoryDep = Annotated[TokenRepository, Depends(get_token_repository)]
 
 
-def get_auth_service(repository: TokenRepositoryDep,) -> AuthService:
-  return AuthService(repository)
+def get_token_service(repository: TokenRepositoryDep,) -> TokenService:
+  return TokenService(repository)
+
+TokenServiceDep = Annotated[TokenService, Depends(get_token_service)]
+
+
+def get_auth_service(token_service: TokenServiceDep) -> AuthService:
+  return AuthService(token_service = token_service)
 
 
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
