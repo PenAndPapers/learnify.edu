@@ -4,10 +4,11 @@ from app.helpers.types import MessageResponse
 from app.modules.user.dependency import UserServiceDep
 from app.modules.user.exception import UserNotFoundError
 
-from .dependency import AuthServiceDep
+from .dependency import AuthServiceDep, TokenServiceDep
 from .exception import (
   TokenInvalidFormatError,
   TokenNotFoundError,
+  TokenRevokedError,
 )
 from .validation import (
   PasswordResetRequest,
@@ -23,8 +24,8 @@ router = APIRouter(prefix="/api/v1/authentication", tags=["Authentication"])
 
 
 @router.post("/verify_token", response_model=ValidTokenResponse)
-def verify_token(token: ValidateTokenRequest, auth_service: AuthServiceDep) -> ValidTokenResponse:
-  token = auth_service.verify_token(token)
+def verify_token(token: ValidateTokenRequest, token_service: TokenServiceDep) -> ValidTokenResponse:
+  token = token_service.verify(token)
 
   if not token:
     raise TokenNotFoundError()
@@ -88,10 +89,10 @@ async def password_reset(payload: PasswordResetRequest, auth_service: AuthServic
 
 
 @router.post("/password/update", response_model=MessageResponse)
-async def password_update(payload: PasswordUpdateRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> MessageResponse:
+async def password_update(payload: PasswordUpdateRequest, auth_service: AuthServiceDep, token_service: TokenServiceDep, user_service: UserServiceDep) -> MessageResponse:
   """Update user's password"""
 
-  db_token = auth_service.verify_token(
+  db_token = token_service.verify(
     ValidateTokenRequest(token=payload.token, token_type=TokenTypeEnum.PASSWORD_RESET)
   )
 
@@ -100,10 +101,12 @@ async def password_update(payload: PasswordUpdateRequest, auth_service: AuthServ
 
   db_user = user_service.update_password(db_token.user_id, payload.new_password)
 
-  password_reset_tokens = auth_service.get_user_tokens_by_type(db_token.user_id, TokenTypeEnum.PASSWORD_RESET)
-  unused_tokens = [token.token for token in password_reset_tokens if not token.is_revoked]
+  password_reset_token = token_service.get_by_type(db_token.user_id, TokenTypeEnum.PASSWORD_RESET)
 
-  revoked_tokens = auth_service.revoke_tokens(unused_tokens)
+  if password_reset_token.is_revoked:
+    raise TokenRevokedError()
+
+  revoked_tokens = token_service.revoke_tokens([password_reset_token.token])
 
   if not revoked_tokens:
     raise TokenNotFoundError()

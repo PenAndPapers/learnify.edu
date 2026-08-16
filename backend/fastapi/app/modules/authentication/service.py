@@ -44,7 +44,7 @@ class TokenService:
   def __init__(self, repository: TokenRepository):
     self.repository = repository
 
-  def generate_token(self, payload: JWTInputParams) -> Token:
+  def generate(self, payload: JWTInputParams) -> Token:
     """Generates a JWT token with the given audience, jti, and token type."""
 
     claims = get_jwt_claims(payload)
@@ -56,9 +56,14 @@ class TokenService:
     """Get a token from the database by its token string."""
     return self.repository.get_token(token)
 
-  def get_user_token_by_type(self, user_id: int, token_type: TokenTypeEnum) -> TokenTable | None:
+  def get_by_type(self, user_id: int, token_type: TokenTypeEnum) -> TokenTable | None:
     """Get the latest user token of a specific type from the database."""
-    return self.repository.get_user_tokens_by_type(user_id, token_type)
+    db_token = self.repository.get_by_type(user_id, token_type)
+
+    if not db_token:
+      raise TokenNotFoundError()
+    
+    return db_token
 
   def get_token_by_values(self, tokens: list[NonEmptyStr]) -> list[TokenTable] | None:
     """Get a list of token records from the database by token strings"""
@@ -92,7 +97,7 @@ class TokenService:
 
     return db_tokens
 
-  def validate(self, token: ValidateTokenRequest) -> TokenTable | None:
+  def verify(self, token: ValidateTokenRequest) -> TokenTable | None:
     """Validates the given JWT token and returns the corresponding UserToken from the database if valid."""
 
     try:
@@ -107,7 +112,7 @@ class TokenService:
     if payload.get("type") != token.token_type:
       raise TokenTypeMismatchError()
 
-    db_token = self.token_service.get_by_token(token.token)
+    db_token = self.get_by_token(token.token)
 
     if not db_token:
       raise TokenNotFoundError()
@@ -122,14 +127,10 @@ class AuthService:
   def __init__(self, token_service: TokenService):
     self.token_service = token_service
 
-  def verify_token(self, token: ValidateTokenRequest) -> TokenTable | None:
-      """Validates the given JWT token and returns the corresponding UserToken from the database if valid."""
-      return self.token_service.validate(token)
-
   def verify_account(self, token_code: str) -> UserToken | None:
     """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
 
-    validated_token = self.verify_token(ValidateTokenRequest(token=token_code, token_type=TokenTypeEnum.EMAIL_VERIFICATION))
+    validated_token = self.token_service.verify(ValidateTokenRequest(token=token_code, token_type=TokenTypeEnum.EMAIL_VERIFICATION))
 
     if validated_token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
       raise TokenInvalidError()
@@ -144,10 +145,10 @@ class AuthService:
       "aud": audience.uuid,
     }
 
-    access_token = self.token_service.generate_token(
+    access_token = self.token_service.generate(
       JWTInputParams(**payload, type=TokenTypeEnum.ACCESS)
     )
-    refresh_token = self.token_service.generate_token(
+    refresh_token = self.token_service.generate(
       JWTInputParams(**payload, type=TokenTypeEnum.REFRESH)
     )
 
@@ -208,11 +209,11 @@ class AuthService:
       "aud": audience.uuid,
     }
 
-    email_verification_token = self.token_service.generate_token(
+    email_verification_token = self.token_service.generate(
       JWTInputParams(**payload, type=TokenTypeEnum.EMAIL_VERIFICATION)
     )
 
-    self.token_service.save_token(
+    self.token_service.add(
       audience,
       payload["jti"],
       [(email_verification_token, TokenTypeEnum.EMAIL_VERIFICATION)],
@@ -245,7 +246,7 @@ class AuthService:
     if not db_user:
       raise UserNotFoundError()
 
-    latest_password_reset_token = self.token_service.get_user_token_by_type(db_user.id, TokenTypeEnum.PASSWORD_RESET)
+    latest_password_reset_token = self.token_service.get_by_type(db_user.id, TokenTypeEnum.PASSWORD_RESET)
     password_reset_expire_minutes = get_security_config().password_reset_expire_minutes
 
     # Prevent user from flooding sending of email using rate limit
@@ -259,11 +260,11 @@ class AuthService:
       "aud": audience.uuid,
     }
 
-    password_reset_token = self.token_service.generate_token(
+    password_reset_token = self.token_service.generate(
       JWTInputParams(**payload, type=TokenTypeEnum.PASSWORD_RESET)
     )
 
-    db_token = self.token_service.save_token(
+    db_token = self.token_service.add(
       audience,
       payload["jti"],
       [(password_reset_token, TokenTypeEnum.PASSWORD_RESET)]

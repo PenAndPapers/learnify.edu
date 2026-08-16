@@ -71,7 +71,7 @@ class TokenRepository:
 
     return db_tokens
 
-  def get_user_token_by_type(self, user_id: PositiveInt, token_type: TokenTypeEnum) -> TokenTable | None:
+  def get_by_type(self, user_id: PositiveInt, token_type: TokenTypeEnum) -> TokenTable | None:
     """Get user lastest active token by type"""
     query = self.get_active_user_tokens(user_id, token_type, limit=1)
     return query[0] if query else None
