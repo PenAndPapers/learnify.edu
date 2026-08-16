@@ -44,6 +44,14 @@ class AuthService:
   def __init__(self, repository: TokenRepository):
     self.repository = repository
 
+  def generate_token(self, payload: JWTInputParams) -> Token:
+    """Generates a JWT token with the given audience, jti, and token type."""
+
+    claims = get_jwt_claims(payload)
+    token = encode_jwt(claims)
+
+    return Token(token=token, expires_at=claims.exp)
+
   def get_by_token(self, token_str: str) -> TokenTable | None:
     """Get a token from the database by its token string."""
     return self.repository.get_token(token_str)
@@ -56,14 +64,6 @@ class AuthService:
     """Get user tokens by type from the database."""
     return self.repository.get_user_tokens_by_type(user_id, token_type)
 
-  def generate_token(self, payload: JWTInputParams) -> Token:
-    """Generates a JWT token with the given audience, jti, and token type."""
-
-    claims = get_jwt_claims(payload)
-    token = encode_jwt(claims)
-
-    return Token(token=token, expires_at=claims.exp)
-
   def save_token(
     self,
     audience: TokenAudience,
@@ -71,6 +71,7 @@ class AuthService:
     tokens: list[tuple[Token, TokenTypeEnum]],
   ) -> list[TokenTable]:
     """Create a list of user token and save to database"""
+    
     token_records = [
       UserToken(
         **token_obj.model_dump(),
@@ -122,6 +123,33 @@ class AuthService:
 
     return db_token
 
+  def create_auth_tokens(self, audience: TokenAudience) -> TokenResponse:
+    """Creates a new pair of access and refresh tokens for the given audience and stores them in the database."""
+
+    payload = {
+      "jti": get_token_family_id(),
+      "aud": audience.uuid,
+    }
+
+    access_token = self.generate_token(
+      JWTInputParams(**payload, type=TokenTypeEnum.ACCESS)
+    )
+    refresh_token = self.generate_token(
+      JWTInputParams(**payload, type=TokenTypeEnum.REFRESH)
+    )
+
+    self.save_token(
+      audience,
+      payload["jti"],
+      [(access_token, TokenTypeEnum.ACCESS), (refresh_token, TokenTypeEnum.REFRESH)],
+    )
+
+    return TokenResponse(
+      access_token=access_token.token,
+      refresh_token=refresh_token.token,
+      expires_at=access_token.expires_at,
+    )
+
   def refresh_token(
     self, token: RefreshTokenRequest, user_service: UserService
   ) -> TokenResponse:
@@ -160,33 +188,6 @@ class AuthService:
     self.repository.db.flush()
 
     return new_token
-
-  def create_auth_tokens(self, audience: TokenAudience) -> TokenResponse:
-    """Creates a new pair of access and refresh tokens for the given audience and stores them in the database."""
-
-    payload = {
-      "jti": get_token_family_id(),
-      "aud": audience.uuid,
-    }
-
-    access_token = self.generate_token(
-      JWTInputParams(**payload, type=TokenTypeEnum.ACCESS)
-    )
-    refresh_token = self.generate_token(
-      JWTInputParams(**payload, type=TokenTypeEnum.REFRESH)
-    )
-
-    self.save_token(
-      audience,
-      payload["jti"],
-      [(access_token, TokenTypeEnum.ACCESS), (refresh_token, TokenTypeEnum.REFRESH)],
-    )
-
-    return TokenResponse(
-      access_token=access_token.token,
-      refresh_token=refresh_token.token,
-      expires_at=access_token.expires_at,
-    )
 
   def create_email_verification_token(self, audience: TokenAudience) -> Token:
     """Creates a new email verification token for the given audience and stores it in the database."""

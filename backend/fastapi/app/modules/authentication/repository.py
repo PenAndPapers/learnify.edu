@@ -15,11 +15,20 @@ class TokenRepository:
     self.db = db
     self.model = TokenTable
 
+  def create(self, tokens: list[UserToken]) -> list[TokenTable]:
+    """Store authentication tokens in the database"""
+
+    records = [self.model(**token.model_dump()) for token in tokens]
+
+    self.db.add_all(records)
+
+    return records
+
   def get_active_user_tokens(
       self,
       user_id: PositiveInt,
       token_type: TokenTypeEnum,
-      limit: int | None = None,
+      limit: PositiveInt | None = None,
   ) -> list[TokenTable]:
     """Get active user tokens with optional limit."""
     query = (
@@ -36,15 +45,6 @@ class TokenRepository:
       query = query.limit(limit)
 
     return list(self.db.scalars(query).all())
-
-  def create(self, tokens: list[UserToken]) -> list[TokenTable]:
-    """Store authentication tokens in the database"""
-
-    records = [self.model(**token.model_dump()) for token in tokens]
-
-    self.db.add_all(records)
-
-    return records
 
   def get_token(self, token: NonEmptyStr) -> TokenTable | None:
     """Get a token record from the database by token string"""
