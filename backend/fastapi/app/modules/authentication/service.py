@@ -68,7 +68,7 @@ class TokenService:
     """Revoke the given tokens by updating their is_revoked field in the database."""
     return self.repository.revoke_tokens(tokens)
 
-  def save_token(
+  def add(
     self,
     audience: TokenAudience,
     family_id: str,
@@ -79,35 +79,20 @@ class TokenService:
     token_records = [
       UserToken(
         **token_obj.model_dump(),
-        is_revoked=False,
         user_id=audience.id,
         token_type=token_type,
         family_id=family_id,
+        is_revoked=False,
       )
       for token_obj, token_type in tokens
     ]
 
-    db_tokens = self.repository.create(token_records)
+    db_tokens = self.repository.add(token_records)
     self.repository.db.flush()
 
     return db_tokens
 
-
-class AuthService:
-  def __init__(self, token_service: TokenService):
-    self.token_service = token_service
-
-  def verify_account(self, token_code: str) -> UserToken | None:
-    """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
-
-    validated_token = self.validate_token(ValidateTokenRequest(token=token_code, token_type=TokenTypeEnum.EMAIL_VERIFICATION))
-
-    if validated_token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
-      raise TokenInvalidError()
-
-    return validated_token
-
-  def validate_token(self, token: ValidateTokenRequest) -> TokenTable | None:
+  def validate(self, token: ValidateTokenRequest) -> TokenTable | None:
     """Validates the given JWT token and returns the corresponding UserToken from the database if valid."""
 
     try:
@@ -132,6 +117,25 @@ class AuthService:
 
     return db_token
 
+
+class AuthService:
+  def __init__(self, token_service: TokenService):
+    self.token_service = token_service
+
+  def verify_token(self, token: ValidateTokenRequest) -> TokenTable | None:
+      """Validates the given JWT token and returns the corresponding UserToken from the database if valid."""
+      return self.token_service.validate(token)
+
+  def verify_account(self, token_code: str) -> UserToken | None:
+    """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
+
+    validated_token = self.verify_token(ValidateTokenRequest(token=token_code, token_type=TokenTypeEnum.EMAIL_VERIFICATION))
+
+    if validated_token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
+      raise TokenInvalidError()
+
+    return validated_token
+
   def create_auth_tokens(self, audience: TokenAudience) -> TokenResponse:
     """Creates a new pair of access and refresh tokens for the given audience and stores them in the database."""
 
@@ -147,11 +151,9 @@ class AuthService:
       JWTInputParams(**payload, type=TokenTypeEnum.REFRESH)
     )
 
-    self.token_service.save_token(
-      audience,
-      payload["jti"],
-      [(access_token, TokenTypeEnum.ACCESS), (refresh_token, TokenTypeEnum.REFRESH)],
-    )
+    tokens = [(access_token, TokenTypeEnum.ACCESS), (refresh_token, TokenTypeEnum.REFRESH)]
+
+    self.token_service.add(audience, payload["jti"], tokens)
 
     return TokenResponse(
       access_token=access_token.token,

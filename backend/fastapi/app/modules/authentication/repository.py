@@ -15,7 +15,7 @@ class TokenRepository:
     self.db = db
     self.model = TokenTable
 
-  def create(self, tokens: list[UserToken]) -> list[TokenTable]:
+  def add(self, tokens: list[UserToken]) -> list[TokenTable]:
     """Store authentication tokens in the database"""
 
     records = [self.model(**token.model_dump()) for token in tokens]

@@ -22,9 +22,9 @@ from .validation import (
 router = APIRouter(prefix="/api/v1/authentication", tags=["Authentication"])
 
 
-@router.post("/validate_token", response_model=ValidTokenResponse)
-def validate_token(token: ValidateTokenRequest, auth_service: AuthServiceDep) -> ValidTokenResponse:
-  token = auth_service.validate_token(token)
+@router.post("/verify_token", response_model=ValidTokenResponse)
+def verify_token(token: ValidateTokenRequest, auth_service: AuthServiceDep) -> ValidTokenResponse:
+  token = auth_service.verify_token(token)
 
   if not token:
     raise TokenNotFoundError()
@@ -91,7 +91,7 @@ async def password_reset(payload: PasswordResetRequest, auth_service: AuthServic
 async def password_update(payload: PasswordUpdateRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> MessageResponse:
   """Update user's password"""
 
-  db_token = auth_service.validate_token(
+  db_token = auth_service.verify_token(
     ValidateTokenRequest(token=payload.token, token_type=TokenTypeEnum.PASSWORD_RESET)
   )
 
