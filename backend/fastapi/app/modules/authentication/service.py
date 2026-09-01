@@ -62,7 +62,7 @@ class TokenService:
 
     if not db_token:
       raise TokenNotFoundError()
-    
+
     return db_token
 
   def get_token_by_values(self, tokens: list[NonEmptyStr]) -> list[TokenTable] | None:

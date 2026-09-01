@@ -18,6 +18,25 @@ class GenderEnum(StrEnum):
   OTHER = "OTHER"
 
 
+class GuardianTypeEnum(StrEnum):
+  FATHER = "FATHER"
+  MOTHER = "MOTHER"
+  SIBLING = "SIBLING"
+  UNCLE = "UNCLE"
+  AUNT = "AUNT"
+  COUSIN = "COUSIN"
+  GUARDIAN = "GUARDIAN"
+  FRIEND = "FRIEND"
+  OTHER = "OTHER"
+
+
+class PreferredContactEnum(StrEnum):
+  PHONE = "PHONE"
+  SMS = "SMS"
+  EMAIL = "EMAIL"
+  WHATSAPP = "WHATSAPP"
+
+
 class UserBaseResponse(BaseModel):
   """User schema containing shared details"""
 
@@ -56,8 +75,12 @@ class CreateUser(BaseModel):
   password: ValidPassword = Field(..., examples=["P@s$w0rd_"])
   first_name: str = Field(..., min_length=1, max_length=100, examples=["Johnny"])
   last_name: str = Field(..., min_length=1, max_length=100, examples=["Smith"])
-  phone_number: ValidPhoneNumber = Field(..., min_length=1, max_length=50, examples=["+123-2342-7890"])
-  address: str = Field(..., min_length=1, max_length=250, examples=["99 Hanson Park 37th Street"])
+  phone_number: ValidPhoneNumber = Field(
+    ..., min_length=1, max_length=50, examples=["+123-2342-7890"]
+  )
+  address: str = Field(
+    ..., min_length=1, max_length=250, examples=["99 Hanson Park 37th Street"]
+  )
   date_of_birth: ValidDateOfBirth = Field(..., examples=["2005-10-22"])
   gender: GenderEnum | None = None
   user_type: UserTypeEnum | None = None
@@ -70,10 +93,18 @@ class UpdateUser(BaseModel):
   """The data required for updating a user"""
 
   email: EmailStr | None = Field(default=None, examples=["johnny.smith@email.com"])
-  first_name: str | None = Field(default=None, min_length=1, max_length=100, examples=["Johnny"])
-  last_name: str | None = Field(default=None, min_length=1, max_length=100, examples=["Smith"])
-  phone_number: ValidPhoneNumber | None = Field(default=None, min_length=1, max_length=50, examples=["+123-2342-7890"])
-  address: str | None = Field(default=None, min_length=1, max_length=250, examples=["99 Hanson Park 37th Street"])
+  first_name: str | None = Field(
+    default=None, min_length=1, max_length=100, examples=["Johnny"]
+  )
+  last_name: str | None = Field(
+    default=None, min_length=1, max_length=100, examples=["Smith"]
+  )
+  phone_number: ValidPhoneNumber | None = Field(
+    default=None, min_length=1, max_length=50, examples=["+123-2342-7890"]
+  )
+  address: str | None = Field(
+    default=None, min_length=1, max_length=250, examples=["99 Hanson Park 37th Street"]
+  )
   date_of_birth: ValidDateOfBirth | None = Field(default=None, examples=["2005-10-22"])
   gender: GenderEnum | None = None
 
