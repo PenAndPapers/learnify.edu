@@ -34,5 +34,7 @@ my-project/
 ├── infra/
 │   ├── database/         # Init scripts, migration files
 │   ├── redis/            # Redis configuration
-│   └── nginx/            # Nginx config & SSL reverse proxy
+│   ├── nginx/            # Nginx config & SSL reverse proxy
+│   └── mailpit/          # Dev email SMTP capture + inbox UI
+│   (see `.trae/rules/infra.md` for full Docker, env, Makefile standards)
 └── docker-compose.yml    # Orchestration across all services

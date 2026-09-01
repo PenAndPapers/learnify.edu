@@ -30,9 +30,16 @@ Act as a **Senior Lead Developer & Code Reviewer**:
 - [ ] **Type Parity:** Do frontend interface definitions accurately mirror the backend Pydantic API response schemas?
 
 ### C. Infrastructure & Docker (`infra/`, `docker-compose.yml`)
+- [ ] **Standards source:** Double-check all docker & infra changes against `.trae/rules/infra.md`. Treat this reviewer section as the quick checklist only.
 - [ ] **Environment Parity:** Are all dynamic configurations loaded from environment variables (`.env`)?
-- [ ] **Networking:** Are service hostnames in code referencing internal Docker Compose network aliases (e.g., `http://backend:8000`) rather than `localhost`?
-- [ ] **Resource Limits:** Are container builds using minimal base images (e.g., `python:3.11-slim`, `node:alpine`)?
+- [ ] **Networking:** Are service hostnames in code referencing internal Docker Compose network aliases (e.g., `http://api:8000`) rather than `localhost`?
+- [ ] **Resource Limits:** Are container builds using minimal base images (e.g., `python:3.12-slim`, `node:alpine`)?
+- [ ] **Healthchecks & Dependencies:** Does every stateful service (DB, cache, API) have a healthcheck? Does `depends_on` use `condition: service_healthy` where startup order matters?
+- [ ] **Persistent Volumes:** Are stateful workloads (Postgres, Redis, Mailpit) mounted to **named volumes**, not host bind-mounts?
+- [ ] **Nginx Hygiene:** Is `server_tokens off`? Is rate limiting applied on proxied paths? Are all four `Host`, `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto` forwarder headers set?
+- [ ] **Secret Safety:** Are no passwords, API tokens, JWT keys, or SMTP credentials hardcoded in YAML, Dockerfiles, Makefiles, or scripts?
+- [ ] **Makefile Scope:** Does the root Makefile delegate to sub-makes instead of shelling to `docker compose`/`pnpm`/tools directly? Are backend format/lint/test commands executed inside the running `api` container via `docker compose exec -T api ...`?
+- [ ] **Schema Boundary:** Does `infra/postgres/init.sql` contain ONLY bootstrap (extension grants, roles)? No table/index DDL — that lives in Alembic.
 
 ---
 
