@@ -16,6 +16,7 @@ class EnrolleeApplicationStatusEnum(StrEnum):
   ENROLLED = "ENROLLED"
   REJECTED = "REJECTED"
 
+
 class CoursesEnum(StrEnum):
   COMPUTER_SCIENCE = "BACHELOR_OF_SCIENCE_IN_COMPUTER_SCIENCE"
   INFORMATION_TECHNOLOGY = "BACHELOR_OF_SCIENCE_IN_FORMATION_TECHNOLOGY"
@@ -53,19 +54,28 @@ class CoursesEnum(StrEnum):
   THEATER = "BACHELOR_OF_SCIENCE_IN_THEATER"
   OTHER = "OTHER"
 
+
 class EnrolleeResponse(UserBaseResponse):
   """Enrollee details"""
 
   previous_school: str
   chosen_course: CoursesEnum
-  application_status: EnrolleeApplicationStatusEnum
+  application_status: EnrolleeApplicationStatusEnum | None = None
+  previous_application_status: EnrolleeApplicationStatusEnum | None = None
   is_verified: bool
   model_config = {"from_attributes": True}
 
 
 class CreateEnrollee(CreateUser):
-  previous_school: str = Field(..., min_length=2, max_length=150, examples=["Farrell-Shields University"])
-  chosen_course: CoursesEnum = Field(..., description="The course the enrollee is applying for.", examples=[CoursesEnum.INFORMATION_TECHNOLOGY.value])
-  application_status: EnrolleeApplicationStatusEnum = EnrolleeApplicationStatusEnum.REGISTERED
+  previous_school: str = Field(
+    ..., min_length=2, max_length=150, examples=["Farrell-Shields University"]
+  )
+  chosen_course: CoursesEnum = Field(
+    ...,
+    description="The course the enrollee is applying for.",
+    examples=[CoursesEnum.INFORMATION_TECHNOLOGY.value],
+  )
+  application_status: EnrolleeApplicationStatusEnum | None = None
+  previous_application_status: EnrolleeApplicationStatusEnum | None = None
   user_type: UserTypeEnum = UserTypeEnum.ENROLLEE
   is_verified: bool = False
