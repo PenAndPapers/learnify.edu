@@ -1,17 +1,15 @@
 from app.helpers.security import hash_password
-from app.helpers.validators.string import is_valid_uuid
 from app.modules.student.exception import (
-  StudentIDNotValidException,
   StudentNotFoundException,
 )
 
-from .repository import StudentResitory
+from .repository import StudentRepository
 from .table import StudentTable
 from .validation import CreateStudent, UpdateStudent
 
 
 class StudentService:
-  def __init__(self, repository: StudentResitory):
+  def __init__(self, repository: StudentRepository):
     self.repository = repository
 
   def get_students(self) -> None:
@@ -26,15 +24,10 @@ class StudentService:
 
     new_student = self.repository.create(updated_student)
 
-    self.repository.db.flush()
-
     return new_student
 
   def read(self, uuid: str) -> StudentTable:
     """Get a student by UUID."""
-
-    if not is_valid_uuid(uuid):
-      raise StudentIDNotValidException()
 
     student = self.repository.read(uuid)
 
@@ -59,9 +52,6 @@ class StudentService:
 
   def delete(self, uuid: str) -> None:
     """Delete a student record in the database by UUID."""
-
-    if not is_valid_uuid(uuid):
-      raise StudentIDNotValidException()
 
     is_student_deleted = self.repository.delete(uuid)
 

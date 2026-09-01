@@ -6,7 +6,7 @@ from .table import StudentTable
 from .validation import CreateStudent, UpdateStudent
 
 
-class StudentResitory:
+class StudentRepository:
   def __init__(self, db: DatabaseDep):
     self.db = db
     self.model = StudentTable
@@ -19,6 +19,8 @@ class StudentResitory:
 
     record = self.model(student_id=self._student_id_generator(), **student.model_dump())
     self.db.add(record)
+    self.db.flush()
+    self.db.refresh(record)
 
     return record
 
@@ -42,7 +44,7 @@ class StudentResitory:
     for key, value in updated_data.items():
       setattr(record, key, value)
 
-    self.db.commit()
+    self.db.flush()
     self.db.refresh(record)
 
     return record
@@ -56,4 +58,5 @@ class StudentResitory:
       return False
 
     self.db.delete(record)
+    self.db.flush()
     return True

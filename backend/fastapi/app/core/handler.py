@@ -22,6 +22,6 @@ def generic_exception_handler(request: Request, exception: Exception):
     status_code=500,
     content={
       "error": "INTERNAL_SERVER_ERROR",
-      "detail": "Error: An unexpected error occured on server",
+      "detail": "An unexpected error occurred on the server",
     },
   )

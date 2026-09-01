@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Response, status
+from pydantic import UUID4
 
 from .dependency import StudentServiceDep
 from .validation import CreateStudent, StudentResponse, UpdateStudent
@@ -29,26 +30,28 @@ def create_student(
 
 
 @router.get("/{uuid}", response_model=StudentResponse)
-def get_student(uuid: str, student_service: StudentServiceDep) -> StudentResponse:
+def get_student(uuid: UUID4, student_service: StudentServiceDep) -> StudentResponse:
   """Get student account information"""
 
-  student = student_service.read(uuid)
+  student = student_service.read(str(uuid))
 
   return StudentResponse.model_validate(student)
 
 
 @router.patch("/{uuid}", response_model=StudentResponse)
-def update_student(uuid: str, student: UpdateStudent, student_service: StudentServiceDep) -> StudentResponse:
+def update_student(
+  uuid: UUID4, student: UpdateStudent, student_service: StudentServiceDep
+) -> StudentResponse:
   """Update student account information"""
-  updated_student = student_service.update(uuid, student)
+  updated_student = student_service.update(str(uuid), student)
 
   return StudentResponse.model_validate(updated_student)
 
 
 @router.delete("/{uuid}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_student(uuid: str, student_service: StudentServiceDep) -> Response:
+def delete_student(uuid: UUID4, student_service: StudentServiceDep) -> Response:
   """Delete student account"""
 
-  student_service.delete(uuid)
+  student_service.delete(str(uuid))
 
   return Response(status_code=status.HTTP_204_NO_CONTENT)
