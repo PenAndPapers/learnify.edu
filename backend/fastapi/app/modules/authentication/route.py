@@ -24,13 +24,20 @@ router = APIRouter(prefix="/api/v1/authentication", tags=["Authentication"])
 
 
 @router.post("/verify_token", response_model=ValidTokenResponse)
-def verify_token(token: ValidateTokenRequest, token_service: TokenServiceDep) -> ValidTokenResponse:
+def verify_token(
+  token: ValidateTokenRequest, token_service: TokenServiceDep
+) -> ValidTokenResponse:
   token = token_service.verify(token)
 
   if not token:
     raise TokenNotFoundError()
 
-  return ValidTokenResponse(is_valid=True, token_type=token.token_type, token=token.token, expires_at=token.expires_at)
+  return ValidTokenResponse(
+    is_valid=True,
+    token_type=token.token_type,
+    token=token.token,
+    expires_at=token.expires_at,
+  )
 
 
 @router.post("/refresh_token", response_model=TokenResponse)
@@ -39,13 +46,15 @@ def refresh_token(
   auth_service: AuthServiceDep,
   user_service: UserServiceDep,
 ) -> TokenResponse:
-  token = auth_service.refresh_token(token, user_service)
+  new_token = auth_service.refresh_token(token, user_service)
 
-  return token
+  return new_token
 
 
 @router.get("/verify/{token_code}", response_model=MessageResponse)
-def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: UserServiceDep) -> MessageResponse:
+def verify_account(
+  token_code: str, auth_service: AuthServiceDep, user_service: UserServiceDep
+) -> MessageResponse:
   """User verify their account by clicking the verification link sent to their email."""
 
   token = auth_service.verify_account(token_code)
@@ -71,7 +80,11 @@ def verify_account(token_code: str, auth_service: AuthServiceDep, user_service: 
 
 
 @router.post("/password/reset", response_model=MessageResponse)
-async def password_reset(payload: PasswordResetRequest, auth_service: AuthServiceDep, user_service: UserServiceDep) -> MessageResponse:
+async def password_reset(
+  payload: PasswordResetRequest,
+  auth_service: AuthServiceDep,
+  user_service: UserServiceDep,
+) -> MessageResponse:
   """Request a password reset link"""
 
   token = auth_service.password_reset(payload, user_service)
@@ -83,13 +96,16 @@ async def password_reset(payload: PasswordResetRequest, auth_service: AuthServic
 
   await auth_service.send_password_reset_email(token, user_service)
 
-  return MessageResponse(
-    message="Password reset link has been sent to your email."
-  )
+  return MessageResponse(message="Password reset link has been sent to your email.")
 
 
 @router.post("/password/update", response_model=MessageResponse)
-async def password_update(payload: PasswordUpdateRequest, auth_service: AuthServiceDep, token_service: TokenServiceDep, user_service: UserServiceDep) -> MessageResponse:
+async def password_update(
+  payload: PasswordUpdateRequest,
+  auth_service: AuthServiceDep,
+  token_service: TokenServiceDep,
+  user_service: UserServiceDep,
+) -> MessageResponse:
   """Update user's password"""
 
   db_token = token_service.verify(
@@ -101,7 +117,9 @@ async def password_update(payload: PasswordUpdateRequest, auth_service: AuthServ
 
   db_user = user_service.update_password(db_token.user_id, payload.new_password)
 
-  password_reset_token = token_service.get_by_type(db_token.user_id, TokenTypeEnum.PASSWORD_RESET)
+  password_reset_token = token_service.get_by_type(
+    db_token.user_id, TokenTypeEnum.PASSWORD_RESET
+  )
 
   if password_reset_token.is_revoked:
     raise TokenRevokedError()
@@ -113,7 +131,4 @@ async def password_update(payload: PasswordUpdateRequest, auth_service: AuthServ
 
   await auth_service.send_password_updated_email(db_user)
 
-  return MessageResponse(
-    message="Password has been successfully updated!"
-  )
-
+  return MessageResponse(message="Password has been successfully updated!")
