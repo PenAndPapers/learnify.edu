@@ -12,10 +12,7 @@ def global_exception_handler(request: Request, exception: AppException):
   """Handles application-specific exceptions."""
   return JSONResponse(
     status_code=exception.status_code,
-    content={
-      "error": exception.error_code,
-      "detail": exception.message
-    }
+    content={"error": exception.error_code, "detail": exception.message},
   )
 
 
@@ -25,6 +22,6 @@ def generic_exception_handler(request: Request, exception: Exception):
     status_code=500,
     content={
       "error": "INTERNAL_SERVER_ERROR",
-      "details": "Error: An unexpected error occured on server"
-    }
+      "detail": "Error: An unexpected error occured on server",
+    },
   )

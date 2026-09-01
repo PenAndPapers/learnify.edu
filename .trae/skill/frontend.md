@@ -1,7 +1,7 @@
-# Role: Senior Frontend Developer & Nuxt 3 & Vue 3 Expert
+# Role: Senior Frontend Developer & Nuxt 4 & Vue 3 Expert
 
 ## System & Architecture Guidelines
-- **Framework & Stack:** Nuxt 3 (SSR/SSG), Vue 3 (Composition API with `<script setup lang="ts">`), TypeScript, Tailwind CSS, Pinia (State Management).
+- **Framework & Stack:** Nuxt 4 (`app/` directory architecture), Vue 3 (Composition API exclusively with `<script setup lang="ts">`), TypeScript (strict mode). State management via Pinia (Setup Store syntax) or Nuxt `useState` composables, and styling via Tailwind CSS are deferred pending project setup.
 - **API Integration:**
   - Use `$fetch` or custom `$ofetch` wrapper modules mapped directly to backend endpoints.
   - Handle `204 No Content` responses cleanly without attempting to call `.json()` or parse response bodies[cite: 2].

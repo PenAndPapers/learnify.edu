@@ -8,31 +8,31 @@ description: Use when writing unit tests, API integration tests, component specs
 ## 1. Role & QA Strategy
 Act as a **QA Automation & Test Engineer**:
 - Write deterministic, repeatable, and isolated tests that catch regressions early.
-- **Backend:** Test FastAPI routes, async SQLAlchemy queries, and Pydantic validation using **Pytest** and **HTTPX (`AsyncClient`)**.
-- **Frontend:** Test Nuxt 4 components, composables, and Pinia stores using **Vitest** and `@nuxt/test-utils`.
-- **Isolation Principle:** Tests must never depend on execution order or persistent external database state. Always use clean fixtures or rollbacks.
+- **Backend:** Test FastAPI routes, synchronous SQLAlchemy sessions, and Pydantic validation using **Pytest** and **FastAPI `TestClient` (sync, httpx-backed)**. Do NOT use `AsyncClient` / `pytest-asyncio` for core backend tests — the project intentionally uses a synchronous architecture.
+- **Frontend:** Test Nuxt 4 components, composables, and Pinia stores (when added) using **Vitest** and `@nuxt/test-utils`.
+- **Isolation Principle:** Tests must never depend on execution order or persistent external database state. Always use clean fixtures or BEGIN/ROLLBACK transaction wrapping.
 
 ---
 
 ## 2. Backend Testing Rules (`backend/fastapi/`)
 
 ### A. Environment & Framework
-- Use **Pytest** as the primary test runner.
-- Use **HTTPX (`AsyncClient`)** with FastAPI’s `TestClient` or async test setups for endpoint testing.
-- Database operations must run against a **separate test database instance** or an async transaction session that automatically rolls back after each test function.
+- Use **Pytest** as the primary test runner (already configured in `pyproject.toml` with coverage, markers, and testpaths).
+- Use **FastAPI `TestClient` (from `fastapi.testclient`)** for endpoint testing — it is synchronous and matches the sync SQLAlchemy + sync route stack.
+- Database operations must run against a **separate test database instance** or a synchronous transaction fixture that wraps each test in `begin_nested()`/`rollback()` so committed data is never visible between tests.
 
 ### B. Unit & Integration Requirements
-- **Route / Controller Tests:** Verify happy paths, invalid payload errors (`400`), unauthorized access (`401`), and missing resources (`404`).
-- **Service Logic:** Test business rules with mocked external HTTP or third-party dependencies (e.g., mock Redis connections or payment gateways).
+- **Route / Controller Tests:** Verify happy paths, invalid payload errors (`400`), unauthorized access (`401`), missing resources (`404`), and schema/UUID validation (`422`).
+- **Service Logic:** Test business rules with mocked external HTTP or third-party dependencies (e.g., mock Redis connections, email delivery, or payment gateways). Verify services raise the correct pure-Python `AppException` subclass on failure.
+- **Repository Tests (optional but recommended):** Test actual persistence against the rollback-wrapped DB session, especially for `exclude_unset=True` partial updates and relation cascades.
 - **Naming Standard:** Place backend test files in `backend/fastapi/tests/` using the `test_<feature>.py` naming convention.
 
 ```python
-# Example: Async endpoint test standard
-import pytest
-from httpx import AsyncClient
+# Example: Sync endpoint test standard
+from fastapi.testclient import TestClient
 
-@pytest.mark.asyncio
-async def test_get_user_profile_success(async_client: AsyncClient, auth_headers: dict):
-    response = await async_client.get("/api/v1/profile", headers=auth_headers)
+def test_get_user_profile_success(client: TestClient, auth_headers: dict):
+    response = client.get("/api/v1/profile", headers=auth_headers)
     assert response.status_code == 200
     assert "email" in response.json()["data"]
+```
