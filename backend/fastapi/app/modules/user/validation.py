@@ -21,12 +21,15 @@ class GenderEnum(StrEnum):
 class GuardianTypeEnum(StrEnum):
   FATHER = "FATHER"
   MOTHER = "MOTHER"
+  HUSAND = "HUSAND"
+  WIFE = "WIFE"
   SIBLING = "SIBLING"
   UNCLE = "UNCLE"
   AUNT = "AUNT"
   COUSIN = "COUSIN"
   GUARDIAN = "GUARDIAN"
   FRIEND = "FRIEND"
+  PARTNER = "PARTNER"
   OTHER = "OTHER"
 
 
