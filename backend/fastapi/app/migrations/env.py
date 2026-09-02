@@ -8,10 +8,18 @@ from app.database.session import Base
 
 # add database tables here for migrations
 from app.modules.authentication.table import TokenTable
-from app.modules.employee.table import EmployeeTable
+from app.modules.employee.table import (
+  EmployeeBankAccountsTable,
+  EmployeeCompensationHistoryTable,
+  EmployeeDocumentsTable,
+  EmployeeEducationHistoryTable,
+  EmployeeLeaveCreditsTable,
+  EmployeePerformanceReviewsTable,
+  EmployeeTable,
+)
 from app.modules.enrollee.table import EnrolleeTable
 from app.modules.student.table import StudentTable
-from app.modules.user.table import UserTable
+from app.modules.user.table import GuardianTable, UserTable
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
