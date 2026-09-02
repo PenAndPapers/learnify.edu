@@ -15,10 +15,8 @@ logger = logging.getLogger(__name__)
 smtp = get_smtp_config()
 
 # Initialize Jinja2 Environment
-env = Environment(
-  loader=FileSystemLoader(TEMPLATES_DIR),
-  autoescape=True
-)
+env = Environment(loader=FileSystemLoader(TEMPLATES_DIR), autoescape=True)
+
 
 def render_email_template(template_name: str, context: dict) -> str:
   """Load and render an HTML template with the given context variables."""

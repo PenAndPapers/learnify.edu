@@ -130,7 +130,11 @@ class AuthService:
   def verify_account(self, token_code: str) -> UserToken | None:
     """Verifies the account of the user by checking the token code and returning the corresponding UserToken if valid."""
 
-    validated_token = self.token_service.verify(ValidateTokenRequest(token=token_code, token_type=TokenTypeEnum.EMAIL_VERIFICATION))
+    validated_token = self.token_service.verify(
+      ValidateTokenRequest(
+        token=token_code, token_type=TokenTypeEnum.EMAIL_VERIFICATION
+      )
+    )
 
     if validated_token.token_type != TokenTypeEnum.EMAIL_VERIFICATION:
       raise TokenInvalidError()
@@ -152,7 +156,10 @@ class AuthService:
       JWTInputParams(**payload, type=TokenTypeEnum.REFRESH)
     )
 
-    tokens = [(access_token, TokenTypeEnum.ACCESS), (refresh_token, TokenTypeEnum.REFRESH)]
+    tokens = [
+      (access_token, TokenTypeEnum.ACCESS),
+      (refresh_token, TokenTypeEnum.REFRESH),
+    ]
 
     self.token_service.add(audience, payload["jti"], tokens)
 
@@ -167,9 +174,15 @@ class AuthService:
   ) -> TokenResponse:
     """Refereshes the given access and refresh tokens and returns new tokens if valid."""
 
-    db_tokens = self.token_service.get_token_by_values([token.access_token, token.refresh_token])
-    access_token = next((token for token in db_tokens if token.token_type == TokenTypeEnum.ACCESS), None)
-    refresh_token = next((token for token in db_tokens if token.token_type == TokenTypeEnum.REFRESH), None)
+    db_tokens = self.token_service.get_token_by_values(
+      [token.access_token, token.refresh_token]
+    )
+    access_token = next(
+      (token for token in db_tokens if token.token_type == TokenTypeEnum.ACCESS), None
+    )
+    refresh_token = next(
+      (token for token in db_tokens if token.token_type == TokenTypeEnum.REFRESH), None
+    )
 
     # check that both access and refresh token are found in the database
     if not access_token or not refresh_token:
@@ -227,9 +240,7 @@ class AuthService:
     if not email or not token:
       raise VerificationLinkNotSentError()
 
-    verification_url = (
-      f"{env_config.base_url}/api/v1/authentication/verify/{token}"
-    )
+    verification_url = f"{env_config.base_url}/api/v1/authentication/verify/{token}"
 
     html_template = render_email_template(
       template_name="account_verification.html",
@@ -238,7 +249,9 @@ class AuthService:
 
     await send_email(to=email, subject="Verify your account", content=html_template)
 
-  def password_reset(self, payload: PasswordResetRequest, user_service: UserService) -> UserToken:
+  def password_reset(
+    self, payload: PasswordResetRequest, user_service: UserService
+  ) -> UserToken:
     """Create new password reset token and store in database"""
 
     db_user = user_service.filter_user({"email": payload.email})
@@ -246,12 +259,18 @@ class AuthService:
     if not db_user:
       raise UserNotFoundError()
 
-    latest_password_reset_token = self.token_service.get_by_type(db_user.id, TokenTypeEnum.PASSWORD_RESET)
+    latest_password_reset_token = self.token_service.get_by_type(
+      db_user.id, TokenTypeEnum.PASSWORD_RESET
+    )
     password_reset_expire_minutes = get_security_config().password_reset_expire_minutes
 
     # Prevent user from flooding sending of email using rate limit
-    if latest_password_reset_token and is_within_minutes(str(latest_password_reset_token.created_at), password_reset_expire_minutes):
-      raise RateLimitException("You have already requested a password reset recently. Please check your inbox or try again shortly.")
+    if latest_password_reset_token and is_within_minutes(
+      str(latest_password_reset_token.created_at), password_reset_expire_minutes
+    ):
+      raise RateLimitException(
+        "You have already requested a password reset recently. Please check your inbox or try again shortly."
+      )
 
     audience = TokenAudience(id=db_user.id, uuid=db_user.uuid)
 
@@ -265,15 +284,14 @@ class AuthService:
     )
 
     db_token = self.token_service.add(
-      audience,
-      payload["jti"],
-      [(password_reset_token, TokenTypeEnum.PASSWORD_RESET)]
+      audience, payload["jti"], [(password_reset_token, TokenTypeEnum.PASSWORD_RESET)]
     )
 
     return db_token[0]
 
-
-  async def send_password_reset_email(self, token: UserToken, user_service: UserService) -> None:
+  async def send_password_reset_email(
+    self, token: UserToken, user_service: UserService
+  ) -> None:
     """Send password reset email that contains link to user"""
 
     db_user = user_service.get_by_id(token.user_id)
@@ -290,8 +308,9 @@ class AuthService:
       context={"password_reset_url": password_reset_url},
     )
 
-    await send_email(to=db_user.email, subject="Update password request", content=html_template)
-
+    await send_email(
+      to=db_user.email, subject="Update password request", content=html_template
+    )
 
   async def send_password_updated_email(self, user: UserTable) -> None:
     """Send email to user that their password has been updated"""

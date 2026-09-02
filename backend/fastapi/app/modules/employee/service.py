@@ -1,4 +1,3 @@
-
 from app.helpers.security.password import hash_password
 from app.helpers.validators.string import is_valid_uuid
 
@@ -37,7 +36,6 @@ class EmployeeService:
 
     return employee
 
-
   def update(self, uuid: str, employee: UpdateEmployee) -> EmployeeTable:
     """Update and employee account by UUID."""
 
@@ -51,7 +49,6 @@ class EmployeeService:
       raise EmployeeNotFoundException()
 
     return updated_employee
-
 
   def delete(self, uuid: str) -> None:
     """Delete an employee account by UUID."""

@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
@@ -6,6 +9,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship, validates
 from app.core import BaseTable
 
 from .validation import TokenTypeEnum
+
+if TYPE_CHECKING:
+  from app.modules.user.table import UserTable
 
 
 class TokenTable(BaseTable):
@@ -24,7 +30,7 @@ class TokenTable(BaseTable):
   family_id: Mapped[str | None] = mapped_column(String)
 
   # Modern 2.0 back-reference relationship mapping
-  user: Mapped["UserTable"] = relationship("UserTable", back_populates="tokens")
+  user: Mapped[UserTable] = relationship("UserTable", back_populates="tokens")
 
   @validates("token_type")
   def validate_token_type(self, key, value):

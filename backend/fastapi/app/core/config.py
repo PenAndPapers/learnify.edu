@@ -101,7 +101,7 @@ def get_security_config() -> SecurityConfig:
     access_token_expire_minutes=env_config.access_token_expire_minutes,
     refresh_token_expire_days=env_config.refresh_token_expire_days,
     email_verification_token_expire_hours=env_config.email_verification_token_expire_hours,
-    password_reset_expire_minutes=env_config.password_reset_expire_minutes
+    password_reset_expire_minutes=env_config.password_reset_expire_minutes,
   )
 
 

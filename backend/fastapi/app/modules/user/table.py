@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 from datetime import date
+from typing import TYPE_CHECKING
 from uuid import uuid4
 
 from sqlalchemy import Boolean, Date, Enum, ForeignKey, Integer, String, false
@@ -7,6 +10,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.table import BaseTable
 
 from .validation import GuardianTypeEnum, PreferredContactEnum, UserTypeEnum
+
+if TYPE_CHECKING:
+  from app.modules.authentication.table import TokenTable
 
 
 class UserTable(BaseTable):
@@ -31,10 +37,10 @@ class UserTable(BaseTable):
   user_type: Mapped[UserTypeEnum] = mapped_column(Enum(UserTypeEnum))
 
   # Modern 2.0 relationship typing
-  guardians: Mapped[list["GuardianTable"]] = relationship(
+  guardians: Mapped[list[GuardianTable]] = relationship(
     "GuardianTable", back_populates="user", cascade="all, delete-orphan"
   )
-  tokens: Mapped[list["TokenTable"]] = relationship(
+  tokens: Mapped[list[TokenTable]] = relationship(
     "TokenTable", back_populates="user", cascade="all, delete-orphan"
   )
 
@@ -62,4 +68,4 @@ class GuardianTable(BaseTable):
   )
 
   # Modern 2.0 back-reference relationship mapping
-  user: Mapped["UserTable"] = relationship("UserTable", back_populates="guardians")
+  user: Mapped[UserTable] = relationship("UserTable", back_populates="guardians")

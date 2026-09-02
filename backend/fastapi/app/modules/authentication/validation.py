@@ -52,18 +52,19 @@ class ValidTokenResponse(BaseModel):
   token: str | None = None
   expires_at: datetime | None = None
 
+
 class RefreshTokenRequest(BaseModel):
   access_token: str = Field(
-    ..., # ... means the field is strictly REQUIRED
+    ...,  # ... means the field is strictly REQUIRED
     min_length=1,
     description="The expired or current JWT access token.",
-    examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."]
+    examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."],
   )
   refresh_token: str = Field(
     ...,
     min_length=1,
     description="The valid cryptographically signed refresh token.",
-    examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."]
+    examples=["eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."],
   )
 
   @field_validator("access_token", "refresh_token")
@@ -84,7 +85,7 @@ class ValidateTokenRequest(BaseModel):
   token_type: TokenTypeEnum = Field(
     ...,
     description="The type category of the token being validated.",
-    examples=[TokenTypeEnum.REFRESH.value]
+    examples=[TokenTypeEnum.REFRESH.value],
   )
 
   @field_validator("token")
@@ -93,6 +94,7 @@ class ValidateTokenRequest(BaseModel):
     if not is_valid_jwt_token_format(value):
       raise ValueError("Invalid JWT token format")
     return value
+
 
 class PasswordResetRequest(BaseModel):
   email: EmailStr

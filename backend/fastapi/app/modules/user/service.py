@@ -1,4 +1,3 @@
-
 from app.helpers.security.password import hash_password
 from app.helpers.types import NonEmptyStr, PositiveInt
 from app.modules.user.exception import UserAlreadyVerifiedError, UserNotFoundError

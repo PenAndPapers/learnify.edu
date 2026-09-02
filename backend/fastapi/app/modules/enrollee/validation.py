@@ -1,4 +1,6 @@
+from datetime import datetime
 from enum import StrEnum
+from uuid import UUID
 
 from pydantic import Field
 
@@ -15,6 +17,26 @@ class EnrolleeApplicationStatusEnum(StrEnum):
   APPROVED = "APPROVED"
   ENROLLED = "ENROLLED"
   REJECTED = "REJECTED"
+
+
+class SemesterEnum(StrEnum):
+  FIRST = "FIRST"
+  SECOND = "SECOND"
+  SUMMER = "SUMMER"
+
+
+class LatestExamStatusEnum(StrEnum):
+  NOT_ASSIGNED = "NOT_ASSIGNED"
+  ASSIGNED = "ASSIGNED"
+  IN_PROGRESS = "IN_PROGRESS"
+  SUBMITTED = "SUBMITTED"
+  GRADED = "GRADED"
+
+
+class InterviewFormatEnum(StrEnum):
+  NONE = "NONE"
+  VIRTUAL_SYNC = "VIRTUAL_SYNC"
+  VIRTUAL_ASYNC = "VIRTUAL_ASYNC"
 
 
 class CoursesEnum(StrEnum):
@@ -58,11 +80,40 @@ class CoursesEnum(StrEnum):
 class EnrolleeResponse(UserBaseResponse):
   """Enrollee details"""
 
-  previous_school: str
-  chosen_course: CoursesEnum
+  application_reference_number: str
+  academic_year: str | None = None
+  semester: SemesterEnum | None = None
+
+  previous_school: str | None = None
+  strand_or_track: str | None = None
+  previous_school_graduated_year: int | None = None
+  general_weighted_average: float | None = None
+
+  chosen_course: CoursesEnum | str | None = None
+
   application_status: EnrolleeApplicationStatusEnum | None = None
   previous_application_status: EnrolleeApplicationStatusEnum | None = None
+
+  exam_link_uuid: UUID | str | None = None
+  exam_link_expires_at: datetime | None = None
+  latest_exam_status: LatestExamStatusEnum | None = None
+  exam_score: float | None = None
+  exam_pass_score: float | None = None
+
+  interview_required: bool = False
+  interview_format: InterviewFormatEnum = InterviewFormatEnum.NONE
+  interview_scheduled_at: datetime | None = None
+  interviewed_by: int | None = None
+  interviewed_at: datetime | None = None
+
+  approved_by: int | None = None
+  approved_at: datetime | None = None
+
+  promoted_to_student_id: int | None = None
+  promoted_at: datetime | None = None
+
   is_verified: bool
+
   model_config = {"from_attributes": True}
 
 
@@ -75,6 +126,38 @@ class CreateEnrollee(CreateUser):
     description="The course the enrollee is applying for.",
     examples=[CoursesEnum.INFORMATION_TECHNOLOGY.value],
   )
+
+  academic_year: str | None = Field(
+    default=None,
+    max_length=20,
+    description="Academic year the enrollee is applying for, e.g. '2026-2027'.",
+    examples=["2026-2027"],
+  )
+  semester: SemesterEnum | None = Field(
+    default=None,
+    description="Intake semester for the application.",
+  )
+  strand_or_track: str | None = Field(
+    default=None,
+    max_length=100,
+    description="K-12 strand or previous educational track.",
+    examples=["STEM", "ABM", "TVL-ICT"],
+  )
+  previous_school_graduated_year: int | None = Field(
+    default=None,
+    ge=1950,
+    le=2200,
+    description="Year the enrollee graduated from their previous school.",
+    examples=[2025],
+  )
+  general_weighted_average: float | None = Field(
+    default=None,
+    ge=0.0,
+    le=5.0,
+    description="General Weighted Average from the previous school.",
+    examples=[1.5],
+  )
+
   application_status: EnrolleeApplicationStatusEnum | None = None
   previous_application_status: EnrolleeApplicationStatusEnum | None = None
   user_type: UserTypeEnum = UserTypeEnum.ENROLLEE

@@ -7,7 +7,7 @@ def is_birth_date_valid_to_register(value: date | None) -> bool:
   """
 
   if value is None:
-      return value
+    return value
 
   today = date.today()
 

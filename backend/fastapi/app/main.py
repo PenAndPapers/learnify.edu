@@ -19,8 +19,8 @@ app = FastAPI(
   lifespan=redis_lifespan,
   exception_handlers={
     AppException: global_exception_handler,
-    Exception: generic_exception_handler
-  }
+    Exception: generic_exception_handler,
+  },
 )
 
 

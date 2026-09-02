@@ -1,4 +1,3 @@
-
 from app.database import DatabaseDep
 
 from .table import EnrolleeTable
@@ -23,7 +22,9 @@ class EnrolleeResitory:
 
     return enrollee if enrollee else None
 
-  def update_enrollee_status(self, enrollee: EnrolleeTable, status: EnrolleeApplicationStatusEnum) -> EnrolleeTable | None:
+  def update_enrollee_status(
+    self, enrollee: EnrolleeTable, status: EnrolleeApplicationStatusEnum
+  ) -> EnrolleeTable | None:
     """Update enrollee application status by UUID."""
 
     if not enrollee:

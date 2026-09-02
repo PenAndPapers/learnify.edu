@@ -16,5 +16,10 @@ ValidPassword = Annotated[str, MinLen(8), AfterValidator(is_valid_password)]
 ValidDateOfBirth = Annotated[date | None, AfterValidator(validate_date_of_birth)]
 ValidPhoneNumber = Annotated[str | None, AfterValidator(validate_phone_number)]
 
+
 class MessageResponse(BaseModel):
-    message: str = Field(..., description="A message describing the result of an operation.", example="Operation completed successfully.")
+  message: str = Field(
+    ...,
+    description="A message describing the result of an operation.",
+    example="Operation completed successfully.",
+  )

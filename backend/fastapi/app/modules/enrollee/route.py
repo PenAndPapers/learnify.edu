@@ -32,13 +32,17 @@ async def enrollee_application_register(
     token = auth_service.create_auth_tokens(audience)
 
     verification_token = auth_service.create_email_verification_token(audience)
-    await auth_service.send_verification_email(new_enrollee.email, verification_token.token)
+    await auth_service.send_verification_email(
+      new_enrollee.email, verification_token.token
+    )
 
   return token
 
 
 @router.get("/{uuid}", response_model=EnrolleeResponse)
-def enrollee_application_profile(uuid: str, enrolle_service: EnrolleeServiceDep) -> EnrolleeResponse:
+def enrollee_application_profile(
+  uuid: str, enrolle_service: EnrolleeServiceDep
+) -> EnrolleeResponse:
   """Get enrollee application profile. Enrollee can view their application profile and status if application is approved, rejected, or pending."""
   enrollee = enrolle_service.get_enrollee(uuid)
 
@@ -46,7 +50,9 @@ def enrollee_application_profile(uuid: str, enrolle_service: EnrolleeServiceDep)
 
 
 @router.patch("/update/status/{uuid}", response_model=None)
-def enrollee_application_update(uuid: str, status: EnrolleeApplicationStatusEnum, enrolle_service: EnrolleeServiceDep) -> None:
+def enrollee_application_update(
+  uuid: str, status: EnrolleeApplicationStatusEnum, enrolle_service: EnrolleeServiceDep
+) -> None:
   """School admin can approve or reject the enrollee application.
   If the application is approved, the enrollee can take the examination for the application.
   """

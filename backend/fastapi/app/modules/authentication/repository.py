@@ -25,20 +25,20 @@ class TokenRepository:
     return records
 
   def get_active_user_tokens(
-      self,
-      user_id: PositiveInt,
-      token_type: TokenTypeEnum,
-      limit: PositiveInt | None = None,
+    self,
+    user_id: PositiveInt,
+    token_type: TokenTypeEnum,
+    limit: PositiveInt | None = None,
   ) -> list[TokenTable]:
     """Get active user tokens with optional limit."""
     query = (
-        select(self.model)
-        .where(
-            self.model.user_id == user_id,
-            self.model.token_type == token_type,
-            self.model.is_revoked.is_(False),
-        )
-        .order_by(self.model.created_at.desc())
+      select(self.model)
+      .where(
+        self.model.user_id == user_id,
+        self.model.token_type == token_type,
+        self.model.is_revoked.is_(False),
+      )
+      .order_by(self.model.created_at.desc())
     )
 
     if limit is not None:
@@ -63,20 +63,21 @@ class TokenRepository:
     if not tokens:
       raise TokenRequiredError()
 
-    query = (select(self.model)
-      .where(self.model.token.in_(tokens))
-      .limit(len(tokens))
-    )
+    query = select(self.model).where(self.model.token.in_(tokens)).limit(len(tokens))
     db_tokens = self.db.scalars(query).all()
 
     return db_tokens
 
-  def get_by_type(self, user_id: PositiveInt, token_type: TokenTypeEnum) -> TokenTable | None:
+  def get_by_type(
+    self, user_id: PositiveInt, token_type: TokenTypeEnum
+  ) -> TokenTable | None:
     """Get user lastest active token by type"""
     query = self.get_active_user_tokens(user_id, token_type, limit=1)
     return query[0] if query else None
 
-  def get_user_tokens_by_type(self, user_id: PositiveInt, token_type: TokenTypeEnum) -> list[TokenTable] | None:
+  def get_user_tokens_by_type(
+    self, user_id: PositiveInt, token_type: TokenTypeEnum
+  ) -> list[TokenTable] | None:
     """Get user active tokens by type"""
     return self.get_active_user_tokens(user_id, token_type)
 
