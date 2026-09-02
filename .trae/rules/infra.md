@@ -1,6 +1,15 @@
 ---
 alwaysApply: false
 description: Use when writing Dockerfiles, docker-compose services, Nginx configs, PostgreSQL/Redis/Mailpit infrastructure, Makefile targets, environment variables, or CI deployment scripts.
+globs:
+  - "docker-compose*.yml"
+  - "docker-compose*.yaml"
+  - "**/Dockerfile"
+  - "infra/**/*"
+  - "Makefile"
+  - "**/Makefile"
+  - ".env.local"
+  - ".github/**/*"
 ---
 
 # Infrastructure & DevOps Rules & Standards
