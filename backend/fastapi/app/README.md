@@ -14,11 +14,16 @@ This repository implements a production-ready, highly scalable architectural pat
 ├── 📁 helpers/            # Shared cross-cutting concerns (e.g., encryption, global security tokens)
 ├── 📁 migrations/         # Alembic database migration environment and version history
 ├── 📁 utils/              # Generic utility features (e.g., mail clients, third-party integrations)
+├── 📁 tests/
+│   └── 📁 e2e/             # End-to-end tests (simulating user interactions)
+│   └── 📁 integration/     # Integration tests (connecting components with components)
+│   └── 📁 unit/            # Unit tests (individual components)
 │
 ├── 📁 modules/            # 📦 Package-by-Feature Domain Layer
 │   │ 
 │   └── 📁 feature/        # Self-contained domain module template
 │       │── 📄 route.py       # Controller Layer (HTTP Endpoints & Request Routing)
+│       │── 📄 exception.py   # Exception Handling Layer (Domain-specific Exceptions)
 │       │── 📄 service.py     # Business Logic / Domain Service Layer
 │       │── 📄 repository.py  # Data Access Layer (Repository Pattern)
 │       │── 📄 table.py       # Database Entity Layer (SQLAlchemy ORM Models)
@@ -40,6 +45,7 @@ The application is partitioned into self-contained vertical slices called module
 Each domain module enforces a strict separation of concerns, divided into the following clear operational layers:
 
 * **📄 route.py (Controller Layer):** Responsible strictly for handling incoming HTTP requests and structuring HTTP responses. It defines routing paths, operational tags, HTTP status codes, and payload boundaries. *Rule: Keep this layer lean—no business processing or direct persistence logic belongs here.*
+* **📄 exception.py (Exception Handling Layer):** Captures and organizes domain-specific exceptions. It defines custom exception classes, maps them to HTTP status codes, and provides clear error messages.
 * **📄 service.py (Business Logic / Domain Layer):** The primary orchestration engine of the feature. It evaluates domain rules, manages execution state workflows, handles domain-specific exceptions, and coordinates data transformation. It remains completely agnostic of HTTP routing frameworks.
 * **📄 repository.py (Data Access Layer / Repository Pattern):** Mediates between the domain and data mapping layers. It abstracts data persistence mechanics away from the business layer using SQLAlchemy ORM expressions (`select`, `update`). This ensures the data engine can be safely mocked out during testing.
 * **📄 table.py (Database Entity Layer):** Maps code entities to relational database structures. It declares SQLAlchemy schemas, primary/foreign key mappings, explicit indexing parameters, and relational cascading behaviors.
@@ -52,24 +58,28 @@ Each domain module enforces a strict separation of concerns, divided into the fo
 
 When an HTTP request hits the application, data flows deterministically through your architecture layers:
 
-```text
- Client Request ──> [ validation.py (DTO Input Verification) ]
-                            │
-                            ▼
-                    [ route.py (Controller Entry) ]
-                            │
-                            ▼
-                    [ service.py (Business Domain Rules) ]
-                            │
-                            ▼
-                    [ repository.py (Database Abstraction) ]
-                            │
-                            ▼
-                    [ table.py (SQLAlchemy Entity State) ]
-                            │
-     Client <── [ validation.py (DTO Output Serialization) ]
-```
+```mermaid
+flowchart TD
+  request["Client Request"]
+  validation["`DTO Input Verification
+  validation.py`"]
+  controller["`Controller Entry
+  route.py`"]
+  service["`Business Domain Rules
+  service.py`"]
+  repository["`Database Abstraction
+  repository.py`"]
+  response["`Client Response
+  (route.py using validation.py schemas)`"]
 
+  request -- "1" --> validation
+  validation -- "2" --> controller
+  controller -- "3" --> service
+  service -- "4" --> repository
+  repository -- "5" --> service
+  service -- "6" --> controller
+  controller -- "7" --> response
+```
 ---
 
 ## 🚀 Architectural Benefits
