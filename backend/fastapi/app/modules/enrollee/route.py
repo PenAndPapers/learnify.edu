@@ -3,10 +3,12 @@ from typing import Annotated
 from fastapi import APIRouter, Body, status
 from pydantic import UUID4
 
+from app.modules.exam.validation import ExamAttemptResponse
 from app.modules.student.validation import StudentResponse
 
 from .dependency import EnrolleeServiceDep
 from .validation import (
+  AssignEnrolleeExam,
   CreateEnrollee,
   EnrolleeResponse,
   UpdateEnrollee,
@@ -96,6 +98,27 @@ def update_status_legacy(
   return EnrolleeResponse.model_validate(enrollee)
 
 
+@router.post(
+  "/{uuid}/assign-exam",
+  status_code=status.HTTP_201_CREATED,
+  response_model=ExamAttemptResponse,
+)
+def assign_exam(
+  uuid: UUID4,
+  payload: AssignEnrolleeExam,
+  enrolle_service: EnrolleeServiceDep,
+):
+  """Assign an entrance exam to this enrollee.
+
+  Creates an ExamAttempt row, generates the shared exam-link UUID,
+  writes the link + pass-score snapshot back onto the enrollee, and
+  transitions application_status → EXAM_PENDING.
+  """
+
+  attempt = enrolle_service.assign_exam(str(uuid), payload)
+  return ExamAttemptResponse.model_validate(attempt)
+
+
 @router.get(
   "/exam/{exam_uuid}",
   status_code=status.HTTP_200_OK,
@@ -105,8 +128,7 @@ def get_by_exam_uuid(
   exam_uuid: UUID4,
   enrolle_service: EnrolleeServiceDep,
 ):
-  """Lookup an enrollee by their exam link UUID (placeholder until the exam module is built)."""
+  """Lookup an enrollee by the shared exam-link UUID stored on their row."""
 
-  _ = exam_uuid
-  _ = enrolle_service
-  pass
+  enrollee = enrolle_service.get_enrollee_by_exam_link(str(exam_uuid))
+  return EnrolleeResponse.model_validate(enrollee)

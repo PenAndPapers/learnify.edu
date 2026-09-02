@@ -18,6 +18,13 @@ from app.modules.employee.table import (
   EmployeeTable,
 )
 from app.modules.enrollee.table import EnrolleeTable
+from app.modules.exam.table import (
+  ExamAnswerTable,
+  ExamAttemptTable,
+  ExamOptionTable,
+  ExamQuestionTable,
+  ExamTable,
+)
 from app.modules.student.table import StudentTable
 from app.modules.user.table import GuardianTable, UserTable
 

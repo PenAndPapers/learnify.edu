@@ -103,3 +103,75 @@ class EnrolleeRepository:
     self.db.flush()
     self.db.refresh(enrollee)
     return enrollee
+
+  def sync_exam_assignment(
+    self,
+    enrollee: EnrolleeTable,
+    exam_link_uuid: str,
+    exam_link_expires_at: datetime,
+    exam_pass_score: float,
+    by_employee_id: int | None = None,
+  ) -> EnrolleeTable:
+    """After an exam attempt is created, persist the link UUID, expiry, pass
+    score snapshot onto the enrollee and transition status to EXAM_PENDING."""
+
+    from .validation import LatestExamStatusEnum
+
+    enrollee.previous_application_status = enrollee.application_status
+    enrollee.application_status = EnrolleeApplicationStatusEnum.EXAM_PENDING
+    enrollee.exam_link_uuid = exam_link_uuid
+    enrollee.exam_link_expires_at = exam_link_expires_at
+    enrollee.exam_pass_score = exam_pass_score
+    enrollee.latest_exam_status = LatestExamStatusEnum.ASSIGNED
+
+    _ = by_employee_id
+
+    self.db.add(enrollee)
+    self.db.flush()
+    self.db.refresh(enrollee)
+    return enrollee
+
+  def sync_graded_exam(
+    self,
+    enrollee: EnrolleeTable,
+    score: float | None,
+    pass_score: float | None,
+  ) -> EnrolleeTable:
+    """After an exam attempt is graded, sync score + latest status + transition
+    the application status to EXAM_PASSED or EXAM_FAILED."""
+
+    from .validation import LatestExamStatusEnum
+
+    enrollee.latest_exam_status = LatestExamStatusEnum.GRADED
+    enrollee.exam_score = score
+    if pass_score is not None:
+      enrollee.exam_pass_score = pass_score
+
+    passed = (
+      score is not None
+      and enrollee.exam_pass_score is not None
+      and score >= enrollee.exam_pass_score
+    )
+    target = (
+      EnrolleeApplicationStatusEnum.EXAM_PASSED
+      if passed
+      else EnrolleeApplicationStatusEnum.EXAM_FAILED
+    )
+
+    enrollee.previous_application_status = enrollee.application_status
+    enrollee.application_status = target
+
+    self.db.add(enrollee)
+    self.db.flush()
+    self.db.refresh(enrollee)
+    return enrollee
+
+  def get_by_exam_link_uuid(self, exam_link_uuid: str) -> EnrolleeTable | None:
+    """Look up an enrollee row by the shared exam link UUID stored on it."""
+
+    enrollee = (
+      self.db.query(self.model)
+      .filter(self.model.exam_link_uuid == exam_link_uuid)
+      .first()
+    )
+    return enrollee if enrollee else None

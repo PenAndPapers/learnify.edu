@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+from typing import Any
+
 from app.helpers.security import hash_password
 from app.helpers.validators.string import is_valid_uuid
 from app.modules.enrollee.exception import (
@@ -15,6 +18,7 @@ from .repository import EnrolleeRepository
 from .table import EnrolleeTable
 from .validation import (
   ALLOWED_STATUS_TRANSITIONS,
+  AssignEnrolleeExam,
   CreateEnrollee,
   EnrolleeApplicationStatusEnum,
   UpdateEnrollee,
@@ -27,9 +31,60 @@ class EnrolleeService:
     self,
     repository: EnrolleeRepository,
     student_repository: StudentRepository | None = None,
+    exam_service_factory: Any = None,
   ):
+    """EnrolleeService is the orchestrator.
+
+    - exam_service_factory: a callable (callback) -> ExamService.
+      The factory is responsible for wiring the enrollee's sync_graded_exam
+      hook as the `on_attempt_graded` callback so that whenever ExamService
+      grades a submission, the enrollee row is atomically kept in sync.
+      Injected by the enrollee.dependency module to avoid circular imports.
+    """
+
     self.repository = repository
     self.student_repository = student_repository
+    self._exam_service_factory = exam_service_factory
+    self._exam_service = None
+
+  def _get_exam_service(self):
+    """Lazily construct the wired ExamService on first use."""
+
+    if self._exam_service is None:
+      if self._exam_service_factory is None:
+        msg = (
+          "assign_exam called but ExamService factory was not injected. "
+          "Wire EnrolleeService via dependency.get_enrollee_service()."
+        )
+        raise RuntimeError(msg)
+      self._exam_service = self._exam_service_factory(
+        self._build_graded_attempt_callback()
+      )
+    return self._exam_service
+
+  def _build_graded_attempt_callback(self):
+    """Return a closure that ExamService calls after grading an attempt."""
+
+    def callback(attempt):
+      self._sync_graded_attempt_to_enrollee(attempt)
+
+    return callback
+
+  def _sync_graded_attempt_to_enrollee(self, attempt) -> None:
+    """Sync enrollee row after an exam attempt is graded."""
+
+    enrollee = (
+      self.repository.db.query(EnrolleeTable)
+      .filter(EnrolleeTable.id == attempt.enrollee_id)
+      .first()
+    )
+    if enrollee is None:
+      return
+    self.repository.sync_graded_exam(
+      enrollee,
+      score=attempt.score,
+      pass_score=attempt.pass_score_snapshot,
+    )
 
   @staticmethod
   def is_transition_allowed(
@@ -152,3 +207,62 @@ class EnrolleeService:
     _ = by_employee_id
 
     return student
+
+  # ---------- Exam module integration (orchestration side) ----------
+
+  def assign_exam(
+    self,
+    enrollee_uuid: str,
+    payload: AssignEnrolleeExam,
+  ):
+    """Assign an exam template to this enrollee.
+
+    Orchestrates:
+      1. validate enrollee + exam exist
+      2. delegate to ExamService to create the ExamAttempt row
+      3. write back exam_link_uuid, expires_at, pass_score snapshot + EXAM_PENDING status
+    """
+
+    enrollee = self.get_enrollee(enrollee_uuid)
+    exam_service = self._get_exam_service()
+
+    attempt = exam_service.assign_to_enrollee(
+      enrollee_id=enrollee.id,
+      exam_uuid=str(payload.exam_uuid),
+      expires_in_hours=payload.expires_in_hours,
+    )
+
+    created_at = (
+      attempt.created_at if hasattr(attempt, "created_at") else datetime.utcnow()
+    )
+    expiry = created_at + timedelta(hours=payload.expires_in_hours)
+
+    synced = self.repository.sync_exam_assignment(
+      enrollee=enrollee,
+      exam_link_uuid=attempt.uuid,
+      exam_link_expires_at=expiry,
+      exam_pass_score=attempt.pass_score_snapshot or 0.0,
+      by_employee_id=payload.by_employee_id,
+    )
+    _ = synced
+
+    return attempt
+
+  def get_enrollee_by_exam_link(self, exam_link_uuid: str) -> EnrolleeTable:
+    """Lookup an enrollee by their stored exam_link_uuid (used by public link route)."""
+
+    if not is_valid_uuid(exam_link_uuid):
+      raise EnrolleeNotFoundException()
+
+    enrollee = self.repository.get_by_exam_link_uuid(exam_link_uuid)
+    if enrollee is None:
+      raise EnrolleeNotFoundException()
+    return enrollee
+
+  def is_exam_link_expired(self, exam_link_uuid: str) -> bool:
+    """Check if the exam link (exam attempt) has expired based on enrollee snapshot."""
+
+    enrollee = self.get_enrollee_by_exam_link(exam_link_uuid)
+    if enrollee.exam_link_expires_at is None:
+      return False
+    return datetime.utcnow() > enrollee.exam_link_expires_at

@@ -249,3 +249,22 @@ class UpdateEnrolleeStatus(BaseModel):
     max_length=500,
     description="Free-text reason or comment for the status change.",
   )
+
+
+class AssignEnrolleeExam(BaseModel):
+  """Payload to assign an online entrance exam to an enrollee."""
+
+  exam_uuid: UUID = Field(
+    ...,
+    description="UUID of the exam template to assign.",
+  )
+  expires_in_hours: int = Field(
+    default=72,
+    ge=1,
+    le=24 * 30,
+    description="How long the generated exam link remains valid (hours).",
+  )
+  by_employee_id: int | None = Field(
+    default=None,
+    description="Employee FK of the admin assigning the exam.",
+  )
