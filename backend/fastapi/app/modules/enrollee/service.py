@@ -7,6 +7,7 @@ from app.modules.enrollee.exception import (
   EnrolleeAlreadyPromotedException,
   EnrolleeExamNotPassedException,
   EnrolleeIDNotValidException,
+  EnrolleeInterviewNotPassedException,
   EnrolleeNotApprovedException,
   EnrolleeNotFoundException,
   InvalidEnrolleeStatusTransitionException,
@@ -19,6 +20,7 @@ from .table import EnrolleeTable
 from .validation import (
   ALLOWED_STATUS_TRANSITIONS,
   AssignEnrolleeExam,
+  AssignEnrolleeInterview,
   CreateEnrollee,
   EnrolleeApplicationStatusEnum,
   UpdateEnrollee,
@@ -32,6 +34,7 @@ class EnrolleeService:
     repository: EnrolleeRepository,
     student_repository: StudentRepository | None = None,
     exam_service_factory: Any = None,
+    interview_service_factory: Any = None,
   ):
     """EnrolleeService is the orchestrator.
 
@@ -40,12 +43,17 @@ class EnrolleeService:
       hook as the `on_attempt_graded` callback so that whenever ExamService
       grades a submission, the enrollee row is atomically kept in sync.
       Injected by the enrollee.dependency module to avoid circular imports.
+    - interview_service_factory: analogous factory -> InterviewService.
+      Wires the on_session_graded callback so graded interviews are synced
+      back to enrollee columns + application status.
     """
 
     self.repository = repository
     self.student_repository = student_repository
     self._exam_service_factory = exam_service_factory
     self._exam_service = None
+    self._interview_service_factory = interview_service_factory
+    self._interview_service = None
 
   def _get_exam_service(self):
     """Lazily construct the wired ExamService on first use."""
@@ -69,6 +77,58 @@ class EnrolleeService:
       self._sync_graded_attempt_to_enrollee(attempt)
 
     return callback
+
+  def _get_interview_service(self):
+    """Lazily construct the wired InterviewService on first use."""
+
+    if self._interview_service is None:
+      if self._interview_service_factory is None:
+        msg = (
+          "schedule_interview called but InterviewService factory was not injected. "
+          "Wire EnrolleeService via dependency.get_enrollee_service()."
+        )
+        raise RuntimeError(msg)
+      self._interview_service = self._interview_service_factory(
+        self._build_graded_session_callback()
+      )
+    return self._interview_service
+
+  def _build_graded_session_callback(self):
+    """Return a closure that InterviewService calls after grading a session."""
+
+    def callback(session):
+      self._sync_graded_session_to_enrollee(session)
+
+    return callback
+
+  def _sync_graded_session_to_enrollee(self, session) -> None:
+    """Sync enrollee row after an interview session is graded."""
+
+    enrollee = (
+      self.repository.db.query(EnrolleeTable)
+      .filter(EnrolleeTable.id == session.enrollee_id)
+      .first()
+    )
+    if enrollee is None:
+      return
+
+    total = sum(q.points for q in session.interview.questions)
+    passed: bool | None = None
+    if (
+      total > 0
+      and session.score is not None
+      and session.pass_score_snapshot is not None
+    ):
+      percentage = (session.score / total) * 100
+      passed = percentage >= session.pass_score_snapshot
+
+    self.repository.sync_graded_interview(
+      enrollee,
+      score=session.score,
+      pass_score=session.pass_score_snapshot,
+      passed=passed,
+      conducted_by=session.conducted_by,
+    )
 
   def _sync_graded_attempt_to_enrollee(self, attempt) -> None:
     """Sync enrollee row after an exam attempt is graded."""
@@ -161,6 +221,7 @@ class EnrolleeService:
     approved_states = {
       EnrolleeApplicationStatusEnum.APPROVED,
       EnrolleeApplicationStatusEnum.EXAM_PASSED,
+      EnrolleeApplicationStatusEnum.INTERVIEW_PASSED,
       EnrolleeApplicationStatusEnum.ENROLLED,
     }
     if (
@@ -177,6 +238,21 @@ class EnrolleeService:
       )
       if not passed:
         return False, EnrolleeExamNotPassedException()
+
+    if enrollee.interview_required:
+      interview_passed_states = {
+        EnrolleeApplicationStatusEnum.INTERVIEW_PASSED,
+        EnrolleeApplicationStatusEnum.APPROVED,
+        EnrolleeApplicationStatusEnum.ENROLLED,
+      }
+      if enrollee.application_status not in interview_passed_states:
+        scored_pass = (
+          enrollee.interview_score is not None
+          and enrollee.interview_pass_score is not None
+          and enrollee.interview_score >= enrollee.interview_pass_score
+        )
+        if not scored_pass:
+          return False, EnrolleeInterviewNotPassedException()
 
     return True, None
 
@@ -266,3 +342,65 @@ class EnrolleeService:
     if enrollee.exam_link_expires_at is None:
       return False
     return datetime.utcnow() > enrollee.exam_link_expires_at
+
+  # ---------- Interview module integration (orchestration side) ----------
+
+  def schedule_interview(
+    self,
+    enrollee_uuid: str,
+    payload: AssignEnrolleeInterview,
+  ):
+    """Schedule an interview template for this enrollee.
+
+    Orchestrates:
+      1. validate enrollee + interview template exist
+      2. delegate to InterviewService to create the InterviewSession row
+      3. write back interview_link_uuid, expires_at, pass_score snapshot
+         + INTERVIEW_PENDING status + mark interview_required=True
+    """
+
+    enrollee = self.get_enrollee(enrollee_uuid)
+    interview_service = self._get_interview_service()
+
+    session = interview_service.schedule_for_enrollee(
+      enrollee_id=enrollee.id,
+      interview_uuid=str(payload.interview_uuid),
+      scheduled_at=payload.scheduled_at,
+      expires_in_hours=payload.expires_in_hours,
+    )
+
+    created_at = (
+      session.created_at if hasattr(session, "created_at") else datetime.utcnow()
+    )
+    expiry = created_at + timedelta(hours=payload.expires_in_hours)
+
+    synced = self.repository.sync_interview_scheduling(
+      enrollee=enrollee,
+      interview_link_uuid=session.uuid,
+      interview_link_expires_at=expiry,
+      interview_pass_score=session.pass_score_snapshot or 0.0,
+      scheduled_at=payload.scheduled_at,
+      by_employee_id=payload.by_employee_id,
+    )
+    _ = synced
+
+    return session
+
+  def get_enrollee_by_interview_link(self, interview_link_uuid: str) -> EnrolleeTable:
+    """Lookup an enrollee by their stored interview_link_uuid (used by public link route)."""
+
+    if not is_valid_uuid(interview_link_uuid):
+      raise EnrolleeNotFoundException()
+
+    enrollee = self.repository.get_by_interview_link_uuid(interview_link_uuid)
+    if enrollee is None:
+      raise EnrolleeNotFoundException()
+    return enrollee
+
+  def is_interview_link_expired(self, interview_link_uuid: str) -> bool:
+    """Check if the interview link (session) has expired based on enrollee snapshot."""
+
+    enrollee = self.get_enrollee_by_interview_link(interview_link_uuid)
+    if enrollee.interview_link_expires_at is None:
+      return False
+    return datetime.utcnow() > enrollee.interview_link_expires_at

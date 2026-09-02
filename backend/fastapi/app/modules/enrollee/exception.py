@@ -65,3 +65,16 @@ class EnrolleeExamNotPassedException(AppException):
     self, message: str = "Error: Enrollee must pass the entrance examination first."
   ):
     super().__init__(message)
+
+
+class EnrolleeInterviewNotPassedException(AppException):
+  """Raised when promotion is attempted on an enrollee who has a required pending/failed interview."""
+
+  status_code = 409
+  error_code = "ENROLLEE_INTERVIEW_NOT_PASSED"
+
+  def __init__(
+    self,
+    message: str = "Error: Enrollee must complete and pass the required interview first.",
+  ):
+    super().__init__(message)

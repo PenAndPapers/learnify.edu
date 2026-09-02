@@ -19,6 +19,7 @@ from .validation import (
   EnrolleeApplicationStatusEnum,
   InterviewFormatEnum,
   LatestExamStatusEnum,
+  LatestInterviewStatusEnum,
   SemesterEnum,
 )
 
@@ -76,6 +77,18 @@ class EnrolleeTable(UserTable):
     ForeignKey("employees.id", ondelete="SET NULL"),
   )
   interviewed_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+  interview_link_uuid: Mapped[str | None] = mapped_column(
+    String,
+    default=None,
+    unique=True,
+  )
+  interview_link_expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+  latest_interview_status: Mapped[LatestInterviewStatusEnum | None] = mapped_column(
+    Enum(LatestInterviewStatusEnum)
+  )
+  interview_score: Mapped[float | None] = mapped_column(Float)
+  interview_pass_score: Mapped[float | None] = mapped_column(Float)
 
   approved_by: Mapped[int | None] = mapped_column(
     Integer,

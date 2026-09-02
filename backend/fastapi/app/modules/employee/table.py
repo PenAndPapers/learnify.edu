@@ -109,7 +109,9 @@ class EmployeeTable(UserTable):
   latest_performance_rating: Mapped[str | None] = mapped_column(String(50))
 
   reports_to: Mapped["EmployeeTable | None"] = relationship(
-    "EmployeeTable", remote_side="EmployeeTable.id"
+    "EmployeeTable",
+    remote_side="EmployeeTable.id",
+    foreign_keys="EmployeeTable.reports_to_id",
   )
 
   # 1:N related tables — owned rows vanish if employee is removed

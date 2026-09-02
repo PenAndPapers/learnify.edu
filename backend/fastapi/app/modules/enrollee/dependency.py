@@ -6,6 +6,8 @@ from fastapi import Depends
 from app.database import DatabaseDep
 from app.modules.exam.dependency import build_exam_service_with_callback
 from app.modules.exam.repository import ExamRepository
+from app.modules.interview.dependency import build_interview_service_with_callback
+from app.modules.interview.repository import InterviewRepository
 
 from ..student.repository import StudentRepository
 from .repository import EnrolleeRepository
@@ -31,6 +33,12 @@ def get_exam_repository(db: DatabaseDep) -> ExamRepository:
   return ExamRepository(db)
 
 
+def get_interview_repository(db: DatabaseDep) -> InterviewRepository:
+  """InterviewRepository for scheduling + grading orchestration."""
+
+  return InterviewRepository(db)
+
+
 def _make_exam_service_factory(
   exam_repository: ExamRepository,
 ) -> Callable:
@@ -48,17 +56,38 @@ def _make_exam_service_factory(
   return factory
 
 
+def _make_interview_service_factory(
+  interview_repository: InterviewRepository,
+) -> Callable:
+  """Return a closure that builds InterviewService on-demand with a callback.
+
+  The enrollee service calls this with its on_session_graded callback so that
+  whenever the interview service grades a submitted session, the enrollee's
+  latest_interview_status, score, and application_status columns are kept in
+  sync — all within the same transaction (same db session).
+  """
+
+  def factory(callback):
+    return build_interview_service_with_callback(interview_repository, callback)
+
+  return factory
+
+
 def get_enrollee_service(
   enrollee_repository: Annotated[EnrolleeRepository, Depends(get_enrollee_repository)],
   student_repository: Annotated[StudentRepository, Depends(get_student_repository)],
   exam_repository: Annotated[ExamRepository, Depends(get_exam_repository)],
+  interview_repository: Annotated[
+    InterviewRepository, Depends(get_interview_repository)
+  ],
 ) -> EnrolleeService:
-  """Get an EnrolleeService instance with its repositories + exam orchestration."""
+  """Get an EnrolleeService instance with its repositories + exam/interview orchestration."""
 
   return EnrolleeService(
     repository=enrollee_repository,
     student_repository=student_repository,
     exam_service_factory=_make_exam_service_factory(exam_repository),
+    interview_service_factory=_make_interview_service_factory(interview_repository),
   )
 
 

@@ -175,3 +175,81 @@ class EnrolleeRepository:
       .first()
     )
     return enrollee if enrollee else None
+
+  def sync_interview_scheduling(
+    self,
+    enrollee: EnrolleeTable,
+    interview_link_uuid: str,
+    interview_link_expires_at: datetime,
+    interview_pass_score: float,
+    scheduled_at: datetime | None = None,
+    by_employee_id: int | None = None,
+  ) -> EnrolleeTable:
+    """After an interview session is created, persist the link UUID, expiry,
+    pass score snapshot onto the enrollee and transition status to INTERVIEW_PENDING."""
+
+    from .validation import LatestInterviewStatusEnum
+
+    enrollee.previous_application_status = enrollee.application_status
+    enrollee.application_status = EnrolleeApplicationStatusEnum.INTERVIEW_PENDING
+    enrollee.interview_required = True
+    enrollee.interview_link_uuid = interview_link_uuid
+    enrollee.interview_link_expires_at = interview_link_expires_at
+    enrollee.interview_pass_score = interview_pass_score
+    enrollee.latest_interview_status = LatestInterviewStatusEnum.SCHEDULED
+    if scheduled_at is not None:
+      enrollee.interview_scheduled_at = scheduled_at
+    if by_employee_id is not None and enrollee.interviewed_by is None:
+      enrollee.interviewed_by = by_employee_id
+
+    self.db.add(enrollee)
+    self.db.flush()
+    self.db.refresh(enrollee)
+    return enrollee
+
+  def sync_graded_interview(
+    self,
+    enrollee: EnrolleeTable,
+    score: float | None,
+    pass_score: float | None,
+    passed: bool | None,
+    conducted_by: int | None = None,
+  ) -> EnrolleeTable:
+    """After an interview session is graded, sync score + latest status + transition
+    the application status to INTERVIEW_PASSED or INTERVIEW_FAILED."""
+
+    from .validation import LatestInterviewStatusEnum
+
+    enrollee.latest_interview_status = LatestInterviewStatusEnum.GRADED
+    enrollee.interview_score = score
+    if pass_score is not None:
+      enrollee.interview_pass_score = pass_score
+    if conducted_by is not None:
+      enrollee.interviewed_by = conducted_by
+      enrollee.interviewed_at = datetime.utcnow()
+
+    target = (
+      EnrolleeApplicationStatusEnum.INTERVIEW_PASSED
+      if passed
+      else EnrolleeApplicationStatusEnum.INTERVIEW_FAILED
+    )
+
+    enrollee.previous_application_status = enrollee.application_status
+    enrollee.application_status = target
+
+    self.db.add(enrollee)
+    self.db.flush()
+    self.db.refresh(enrollee)
+    return enrollee
+
+  def get_by_interview_link_uuid(
+    self, interview_link_uuid: str
+  ) -> EnrolleeTable | None:
+    """Look up an enrollee row by the shared interview session link UUID stored on it."""
+
+    enrollee = (
+      self.db.query(self.model)
+      .filter(self.model.interview_link_uuid == interview_link_uuid)
+      .first()
+    )
+    return enrollee if enrollee else None

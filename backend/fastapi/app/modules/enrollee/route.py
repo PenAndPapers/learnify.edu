@@ -4,11 +4,13 @@ from fastapi import APIRouter, Body, status
 from pydantic import UUID4
 
 from app.modules.exam.validation import ExamAttemptResponse
+from app.modules.interview.validation import InterviewSessionResponse
 from app.modules.student.validation import StudentResponse
 
 from .dependency import EnrolleeServiceDep
 from .validation import (
   AssignEnrolleeExam,
+  AssignEnrolleeInterview,
   CreateEnrollee,
   EnrolleeResponse,
   UpdateEnrollee,
@@ -131,4 +133,40 @@ def get_by_exam_uuid(
   """Lookup an enrollee by the shared exam-link UUID stored on their row."""
 
   enrollee = enrolle_service.get_enrollee_by_exam_link(str(exam_uuid))
+  return EnrolleeResponse.model_validate(enrollee)
+
+
+@router.post(
+  "/{uuid}/schedule-interview",
+  status_code=status.HTTP_201_CREATED,
+  response_model=InterviewSessionResponse,
+)
+def schedule_interview(
+  uuid: UUID4,
+  payload: AssignEnrolleeInterview,
+  enrolle_service: EnrolleeServiceDep,
+):
+  """Schedule an interview for this enrollee.
+
+  Creates an InterviewSession row, generates the shared session-link UUID,
+  writes the link + pass-score snapshot back onto the enrollee, marks
+  interview_required=True, and transitions application_status → INTERVIEW_PENDING.
+  """
+
+  session = enrolle_service.schedule_interview(str(uuid), payload)
+  return InterviewSessionResponse.model_validate(session)
+
+
+@router.get(
+  "/interview/{interview_uuid}",
+  status_code=status.HTTP_200_OK,
+  response_model=EnrolleeResponse,
+)
+def get_by_interview_uuid(
+  interview_uuid: UUID4,
+  enrolle_service: EnrolleeServiceDep,
+):
+  """Lookup an enrollee by the shared interview session-link UUID stored on their row."""
+
+  enrollee = enrolle_service.get_enrollee_by_interview_link(str(interview_uuid))
   return EnrolleeResponse.model_validate(enrollee)

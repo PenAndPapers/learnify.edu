@@ -14,6 +14,9 @@ class EnrolleeApplicationStatusEnum(StrEnum):
   EXAM_PENDING = "EXAM_PENDING"
   EXAM_FAILED = "EXAM_FAILED"
   EXAM_PASSED = "EXAM_PASSED"
+  INTERVIEW_PENDING = "INTERVIEW_PENDING"
+  INTERVIEW_FAILED = "INTERVIEW_FAILED"
+  INTERVIEW_PASSED = "INTERVIEW_PASSED"
   APPROVED = "APPROVED"
   ENROLLED = "ENROLLED"
   REJECTED = "REJECTED"
@@ -47,6 +50,23 @@ ALLOWED_STATUS_TRANSITIONS: dict[
     EnrolleeApplicationStatusEnum.REJECTED,
   },
   EnrolleeApplicationStatusEnum.EXAM_PASSED: {
+    EnrolleeApplicationStatusEnum.INTERVIEW_PENDING,
+    EnrolleeApplicationStatusEnum.APPROVED,
+    EnrolleeApplicationStatusEnum.ENROLLED,
+    EnrolleeApplicationStatusEnum.REJECTED,
+  },
+  EnrolleeApplicationStatusEnum.INTERVIEW_PENDING: {
+    EnrolleeApplicationStatusEnum.INTERVIEW_PASSED,
+    EnrolleeApplicationStatusEnum.INTERVIEW_FAILED,
+    EnrolleeApplicationStatusEnum.EXAM_PASSED,
+    EnrolleeApplicationStatusEnum.REJECTED,
+  },
+  EnrolleeApplicationStatusEnum.INTERVIEW_FAILED: {
+    EnrolleeApplicationStatusEnum.INTERVIEW_PENDING,
+    EnrolleeApplicationStatusEnum.EXAM_PASSED,
+    EnrolleeApplicationStatusEnum.REJECTED,
+  },
+  EnrolleeApplicationStatusEnum.INTERVIEW_PASSED: {
     EnrolleeApplicationStatusEnum.APPROVED,
     EnrolleeApplicationStatusEnum.ENROLLED,
     EnrolleeApplicationStatusEnum.REJECTED,
@@ -54,6 +74,8 @@ ALLOWED_STATUS_TRANSITIONS: dict[
   EnrolleeApplicationStatusEnum.APPROVED: {
     EnrolleeApplicationStatusEnum.EXAM_PENDING,
     EnrolleeApplicationStatusEnum.EXAM_PASSED,
+    EnrolleeApplicationStatusEnum.INTERVIEW_PENDING,
+    EnrolleeApplicationStatusEnum.INTERVIEW_PASSED,
     EnrolleeApplicationStatusEnum.ENROLLED,
     EnrolleeApplicationStatusEnum.REJECTED,
   },
@@ -62,6 +84,7 @@ ALLOWED_STATUS_TRANSITIONS: dict[
     EnrolleeApplicationStatusEnum.PENDING_ACTIVATION,
     EnrolleeApplicationStatusEnum.PROFILE_COMPLETE,
     EnrolleeApplicationStatusEnum.EXAM_PENDING,
+    EnrolleeApplicationStatusEnum.INTERVIEW_PENDING,
   },
 }
 
@@ -78,6 +101,15 @@ class LatestExamStatusEnum(StrEnum):
   IN_PROGRESS = "IN_PROGRESS"
   SUBMITTED = "SUBMITTED"
   GRADED = "GRADED"
+
+
+class LatestInterviewStatusEnum(StrEnum):
+  NOT_SCHEDULED = "NOT_SCHEDULED"
+  SCHEDULED = "SCHEDULED"
+  IN_PROGRESS = "IN_PROGRESS"
+  COMPLETED = "COMPLETED"
+  GRADED = "GRADED"
+  CANCELLED = "CANCELLED"
 
 
 class InterviewFormatEnum(StrEnum):
@@ -152,6 +184,12 @@ class EnrolleeResponse(UserBaseResponse):
   interview_scheduled_at: datetime | None = None
   interviewed_by: int | None = None
   interviewed_at: datetime | None = None
+
+  interview_link_uuid: UUID | str | None = None
+  interview_link_expires_at: datetime | None = None
+  latest_interview_status: LatestInterviewStatusEnum | None = None
+  interview_score: float | None = None
+  interview_pass_score: float | None = None
 
   approved_by: int | None = None
   approved_at: datetime | None = None
@@ -233,6 +271,8 @@ class UpdateEnrollee(BaseModel):
   interviewed_by: int | None = None
   interviewed_at: datetime | None = None
 
+  interview_pass_score: float | None = Field(default=None, ge=0.0, le=100.0)
+
   model_config = {"from_attributes": True}
 
 
@@ -267,4 +307,27 @@ class AssignEnrolleeExam(BaseModel):
   by_employee_id: int | None = Field(
     default=None,
     description="Employee FK of the admin assigning the exam.",
+  )
+
+
+class AssignEnrolleeInterview(BaseModel):
+  """Payload to schedule an online interview for an enrollee."""
+
+  interview_uuid: UUID = Field(
+    ...,
+    description="UUID of the interview template to schedule.",
+  )
+  scheduled_at: datetime | None = Field(
+    default=None,
+    description="When the interview is scheduled to occur (optional; None = immediate).",
+  )
+  expires_in_hours: int = Field(
+    default=24 * 7,
+    ge=1,
+    le=24 * 60,
+    description="How long the generated interview session link remains valid (hours).",
+  )
+  by_employee_id: int | None = Field(
+    default=None,
+    description="Employee FK of the admin scheduling the interview.",
   )
