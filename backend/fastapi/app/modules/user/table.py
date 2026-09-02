@@ -57,7 +57,9 @@ class GuardianTable(BaseTable):
   relation_to_user: Mapped[GuardianTypeEnum] = mapped_column(Enum(GuardianTypeEnum))
   is_primary_contact: Mapped[bool] = mapped_column(Boolean, server_default=false())
   is_emergency_contact: Mapped[bool] = mapped_column(Boolean, server_default=false())
-  preferred_contact_method: Mapped[PreferredContactEnum]
+  preferred_contact_method: Mapped[PreferredContactEnum] = mapped_column(
+    Enum(PreferredContactEnum)
+  )
 
   # Modern 2.0 back-reference relationship mapping
   user: Mapped["UserTable"] = relationship("UserTable", back_populates="guardians")
