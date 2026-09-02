@@ -4,22 +4,33 @@ from fastapi import Depends
 
 from app.database import DatabaseDep
 
-from .repository import EnrolleeResitory
+from ..student.repository import StudentRepository
+from .repository import EnrolleeRepository
 from .service import EnrolleeService
 
 
-# Enrollee service dependency
-def get_enrollee_repository(db: DatabaseDep) -> EnrolleeResitory:
-  return EnrolleeResitory(db)
+def get_enrollee_repository(db: DatabaseDep) -> EnrolleeRepository:
+  """Get a EnrolleeRepository instance with the database session."""
+
+  return EnrolleeRepository(db)
 
 
-EnrolleeRepositoryDep = Annotated[EnrolleeResitory, Depends(get_enrollee_repository)]
+def get_student_repository(db: DatabaseDep) -> StudentRepository:
+  """Get a StudentRepository instance for promotion workflows from the enrollee service."""
+
+  return StudentRepository(db)
 
 
-def get_enrolle_service(
-  repository: EnrolleeResitory = Depends(get_enrollee_repository),
+def get_enrollee_service(
+  enrollee_repository: Annotated[EnrolleeRepository, Depends(get_enrollee_repository)],
+  student_repository: Annotated[StudentRepository, Depends(get_student_repository)],
 ) -> EnrolleeService:
-  return EnrolleeService(repository)
+  """Get an EnrolleeService instance with its repositories."""
+
+  return EnrolleeService(
+    repository=enrollee_repository, student_repository=student_repository
+  )
 
 
-EnrolleeServiceDep = Annotated[EnrolleeService, Depends(get_enrolle_service)]
+EnrolleeRepositoryDep = Annotated[EnrolleeRepository, Depends(get_enrollee_repository)]
+EnrolleeServiceDep = Annotated[EnrolleeService, Depends(get_enrollee_service)]

@@ -23,7 +23,7 @@ class StudentAcademicStatusEnum(StrEnum):
 class StudentFullResponse(UserInternalResponse):
   """Student full detail response"""
 
-  studen_id: str
+  student_id: str
   year_level: int
   academic_status: StudentAcademicStatusEnum
 
@@ -45,7 +45,7 @@ class CreateStudent(CreateUser):
     ..., ge=1, le=5, description="Year level must be between 1 and 5"
   )
   user_type: UserTypeEnum = Field(default=UserTypeEnum.STUDENT)
-  is_verified: int = True
+  is_verified: bool = True
 
   model_config = {"from_attributes": True}
 

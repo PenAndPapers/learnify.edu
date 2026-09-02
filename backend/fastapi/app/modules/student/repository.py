@@ -1,9 +1,14 @@
 import uuid
 
 from app.database import DatabaseDep
+from app.modules.enrollee.table import EnrolleeTable
 
 from .table import StudentTable
-from .validation import CreateStudent, UpdateStudent
+from .validation import (
+  CreateStudent,
+  StudentAcademicStatusEnum,
+  UpdateStudent,
+)
 
 
 class StudentRepository:
@@ -18,6 +23,27 @@ class StudentRepository:
     """Store student information in the database"""
 
     record = self.model(student_id=self._student_id_generator(), **student.model_dump())
+    self.db.add(record)
+    self.db.flush()
+    self.db.refresh(record)
+
+    return record
+
+  def promote_from_enrollee(self, enrollee: EnrolleeTable) -> StudentTable:
+    """Create a Student row sharing the existing users.id of an already-approved enrollee.
+
+    Does NOT duplicate the user row. This uses the SQLAlchemy joined-table inheritance
+    pattern: a row in `students` with the same `id` as the enrollee's user row extends
+    that user into the STUDENT polymorphic identity. After promotion, the same account
+    login works for both the originating enrollee record and the new student record.
+    """
+
+    record = self.model(
+      id=enrollee.id,
+      student_id=self._student_id_generator(),
+      year_level=1,
+      academic_status=StudentAcademicStatusEnum.ACTIVE,
+    )
     self.db.add(record)
     self.db.flush()
     self.db.refresh(record)

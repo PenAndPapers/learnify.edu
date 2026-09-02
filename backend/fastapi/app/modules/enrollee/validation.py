@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID
 
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 from app.modules.user.validation import CreateUser, UserBaseResponse, UserTypeEnum
 
@@ -17,6 +17,53 @@ class EnrolleeApplicationStatusEnum(StrEnum):
   APPROVED = "APPROVED"
   ENROLLED = "ENROLLED"
   REJECTED = "REJECTED"
+
+
+ALLOWED_STATUS_TRANSITIONS: dict[
+  EnrolleeApplicationStatusEnum, set[EnrolleeApplicationStatusEnum]
+] = {
+  EnrolleeApplicationStatusEnum.REGISTERED: {
+    EnrolleeApplicationStatusEnum.PENDING_ACTIVATION,
+    EnrolleeApplicationStatusEnum.PROFILE_COMPLETE,
+    EnrolleeApplicationStatusEnum.REJECTED,
+  },
+  EnrolleeApplicationStatusEnum.PENDING_ACTIVATION: {
+    EnrolleeApplicationStatusEnum.PROFILE_COMPLETE,
+    EnrolleeApplicationStatusEnum.REGISTERED,
+    EnrolleeApplicationStatusEnum.REJECTED,
+  },
+  EnrolleeApplicationStatusEnum.PROFILE_COMPLETE: {
+    EnrolleeApplicationStatusEnum.EXAM_PENDING,
+    EnrolleeApplicationStatusEnum.APPROVED,
+    EnrolleeApplicationStatusEnum.REJECTED,
+  },
+  EnrolleeApplicationStatusEnum.EXAM_PENDING: {
+    EnrolleeApplicationStatusEnum.EXAM_PASSED,
+    EnrolleeApplicationStatusEnum.EXAM_FAILED,
+    EnrolleeApplicationStatusEnum.REJECTED,
+  },
+  EnrolleeApplicationStatusEnum.EXAM_FAILED: {
+    EnrolleeApplicationStatusEnum.EXAM_PENDING,
+    EnrolleeApplicationStatusEnum.REJECTED,
+  },
+  EnrolleeApplicationStatusEnum.EXAM_PASSED: {
+    EnrolleeApplicationStatusEnum.APPROVED,
+    EnrolleeApplicationStatusEnum.ENROLLED,
+    EnrolleeApplicationStatusEnum.REJECTED,
+  },
+  EnrolleeApplicationStatusEnum.APPROVED: {
+    EnrolleeApplicationStatusEnum.EXAM_PENDING,
+    EnrolleeApplicationStatusEnum.EXAM_PASSED,
+    EnrolleeApplicationStatusEnum.ENROLLED,
+    EnrolleeApplicationStatusEnum.REJECTED,
+  },
+  EnrolleeApplicationStatusEnum.ENROLLED: set(),
+  EnrolleeApplicationStatusEnum.REJECTED: {
+    EnrolleeApplicationStatusEnum.PENDING_ACTIVATION,
+    EnrolleeApplicationStatusEnum.PROFILE_COMPLETE,
+    EnrolleeApplicationStatusEnum.EXAM_PENDING,
+  },
+}
 
 
 class SemesterEnum(StrEnum):
@@ -162,3 +209,43 @@ class CreateEnrollee(CreateUser):
   previous_application_status: EnrolleeApplicationStatusEnum | None = None
   user_type: UserTypeEnum = UserTypeEnum.ENROLLEE
   is_verified: bool = False
+
+  model_config = {"from_attributes": True}
+
+
+class UpdateEnrollee(BaseModel):
+  """Partial edit of enrollee application fields (enrollee self-service + admin)."""
+
+  previous_school: str | None = Field(default=None, min_length=2, max_length=150)
+  chosen_course: CoursesEnum | None = Field(default=None)
+
+  academic_year: str | None = Field(default=None, max_length=20)
+  semester: SemesterEnum | None = None
+  strand_or_track: str | None = Field(default=None, max_length=100)
+  previous_school_graduated_year: int | None = Field(default=None, ge=1950, le=2200)
+  general_weighted_average: float | None = Field(default=None, ge=0.0, le=5.0)
+
+  exam_pass_score: float | None = Field(default=None, ge=0.0, le=100.0)
+
+  interview_required: bool | None = None
+  interview_format: InterviewFormatEnum | None = None
+  interview_scheduled_at: datetime | None = None
+  interviewed_by: int | None = None
+  interviewed_at: datetime | None = None
+
+  model_config = {"from_attributes": True}
+
+
+class UpdateEnrolleeStatus(BaseModel):
+  """Admin payload used to transition an enrollee from one application status to another."""
+
+  status: EnrolleeApplicationStatusEnum
+  by_employee_id: int | None = Field(
+    default=None,
+    description="Employee FK of the admin performing the change.",
+  )
+  note: str | None = Field(
+    default=None,
+    max_length=500,
+    description="Free-text reason or comment for the status change.",
+  )
