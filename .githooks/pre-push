@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GIT_DIR="${ROOT_DIR}/.git"
 
+export COMPOSE_FILE="${ROOT_DIR}/docker-compose.yml"
+export COMPOSE_PROJECT_NAME="learnifyedu"
+
 print_banner() {
   echo
   echo "═══════════════════════════════════════════════════════════════"
@@ -38,6 +41,8 @@ echo "  🎨 Frontend — Full quality gate (format → lint → typecheck → t
 echo "  ─────────────────────────────────────────────────────────────"
 
 frontend_step_failed=""
+frontend_step_cmd=""
+frontend_step_exit=0
 
 if ! command -v pnpm >/dev/null 2>&1; then
   echo "  ❌ pnpm not found on PATH. Cannot run frontend gates."
@@ -47,28 +52,48 @@ fi
 
 if [ -z "${frontend_step_failed}" ]; then
   echo "  1/4 Prettier format-check (no writes)..."
-  if !(cd "${ROOT_DIR}/frontend/nuxt4" && pnpm format:check); then
+  frontend_step_cmd="pnpm format:check (in frontend/nuxt4)"
+  set +e
+  (cd "${ROOT_DIR}/frontend/nuxt4" && pnpm format:check)
+  frontend_step_exit=$?
+  set -e
+  if [ "${frontend_step_exit}" -ne 0 ]; then
     frontend_step_failed="format-check"
   fi
 fi
 
 if [ -z "${frontend_step_failed}" ]; then
   echo "  2/4 ESLint (no --fix — errors only)..."
-  if !(cd "${ROOT_DIR}/frontend/nuxt4" && pnpm lint); then
+  frontend_step_cmd="pnpm lint (in frontend/nuxt4)"
+  set +e
+  (cd "${ROOT_DIR}/frontend/nuxt4" && pnpm lint)
+  frontend_step_exit=$?
+  set -e
+  if [ "${frontend_step_exit}" -ne 0 ]; then
     frontend_step_failed="lint"
   fi
 fi
 
 if [ -z "${frontend_step_failed}" ]; then
   echo "  3/4 TypeScript strict typecheck..."
-  if !(cd "${ROOT_DIR}/frontend/nuxt4" && pnpm typecheck); then
+  frontend_step_cmd="pnpm typecheck (in frontend/nuxt4)"
+  set +e
+  (cd "${ROOT_DIR}/frontend/nuxt4" && pnpm typecheck)
+  frontend_step_exit=$?
+  set -e
+  if [ "${frontend_step_exit}" -ne 0 ]; then
     frontend_step_failed="typecheck"
   fi
 fi
 
 if [ -z "${frontend_step_failed}" ]; then
   echo "  4/4 Vitest full suite (run-once)..."
-  if !(cd "${ROOT_DIR}/frontend/nuxt4" && pnpm test); then
+  frontend_step_cmd="pnpm test (in frontend/nuxt4)"
+  set +e
+  (cd "${ROOT_DIR}/frontend/nuxt4" && pnpm test)
+  frontend_step_exit=$?
+  set -e
+  if [ "${frontend_step_exit}" -ne 0 ]; then
     frontend_step_failed="test"
   fi
 fi
@@ -76,6 +101,8 @@ fi
 if [ -n "${frontend_step_failed}" ]; then
   echo
   echo "  ❌ Frontend gate FAILED at step: ${frontend_step_failed}"
+  echo "     Command:  ${frontend_step_cmd}"
+  echo "     Exit code: ${frontend_step_exit}"
   echo
   echo "     Local-repair commands (run from repo root):"
   echo "       make frontend-nuxt-format         # Prettier --write"
@@ -99,22 +126,24 @@ echo "  🚀 Backend — Full quality gate (lint → pytest)"
 echo "  ─────────────────────────────────────────────────────────────"
 
 backend_container_up=0
+backend_container_state=""
 if command -v docker >/dev/null 2>&1; then
-  if (cd "${ROOT_DIR}" && docker compose ps api --format json 2>/dev/null || true) | grep -q '"State":"running"'; then
+  backend_container_state="$(cd "${ROOT_DIR}" && docker compose ps api --format '{{.State}}' 2>/dev/null || true)"
+  if [ "${backend_container_state}" = "running" ]; then
     backend_container_up=1
   fi
 fi
 
 if [ "${backend_container_up}" -ne 1 ]; then
   echo
-  echo "  ❌ The 'api' container is NOT running, and backend tests"
-  echo "     require a live Postgres/Redis stack. Push blocked."
+  echo "  ❌ The 'api' container is NOT running (reported state: '${backend_container_state:-unknown}')."
+  echo "     Backend tests require a live Postgres/Redis stack. Push blocked."
   echo
   echo "     👉 Boot the full backend stack (gateway + api + db + cache + mailpit):"
   echo "            make backend-fastapi-up"
   echo "        Then re-run:  git push"
   echo
-  echo "     👉 Verify containers are up:  docker compose ps"
+  echo "     👉 Verify containers are up:  docker compose -f '${COMPOSE_FILE}' ps"
   echo "        Expected: gateway, api, database, cache, mailpit all 'running'."
   echo
   echo "  ⚠️  Emergency bypass (NOT recommended — CI will still fail):"
@@ -125,15 +154,27 @@ if [ "${backend_container_up}" -ne 1 ]; then
 fi
 
 backend_step_failed=""
+backend_step_cmd=""
+backend_step_exit=0
 
 echo "  1/2 Ruff lint (check-only — no auto-fix at push time)..."
-if !(cd "${ROOT_DIR}/backend/fastapi" && make lint); then
+backend_step_cmd="make lint (in backend/fastapi) → docker compose exec api ruff check ..."
+set +e
+(cd "${ROOT_DIR}/backend/fastapi" && make lint)
+backend_step_exit=$?
+set -e
+if [ "${backend_step_exit}" -ne 0 ]; then
   backend_step_failed="lint"
 fi
 
 if [ -z "${backend_step_failed}" ]; then
   echo "  2/2 Pytest full suite (unit + integration + e2e inside api container)..."
-  if !(cd "${ROOT_DIR}/backend/fastapi" && make test); then
+  backend_step_cmd="make test (in backend/fastapi) → docker compose exec api pytest --no-cov"
+  set +e
+  (cd "${ROOT_DIR}/backend/fastapi" && make test)
+  backend_step_exit=$?
+  set -e
+  if [ "${backend_step_exit}" -ne 0 ]; then
     backend_step_failed="test"
   fi
 fi
@@ -141,6 +182,8 @@ fi
 if [ -n "${backend_step_failed}" ]; then
   echo
   echo "  ❌ Backend gate FAILED at step: ${backend_step_failed}"
+  echo "     Command:  ${backend_step_cmd}"
+  echo "     Exit code: ${backend_step_exit}"
   echo
   echo "     Local-repair commands (run from repo root):"
   echo "       make backend-fastapi-lint    # ruff check --fix + format + lint"

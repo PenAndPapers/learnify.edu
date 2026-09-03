@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GIT_DIR="${ROOT_DIR}/.git"
 
+export COMPOSE_FILE="${ROOT_DIR}/docker-compose.yml"
+export COMPOSE_PROJECT_NAME="learnifyedu"
+
 print_banner() {
   echo
   echo "═══════════════════════════════════════════════════════════════"
@@ -83,7 +86,8 @@ echo "  ────────────────────────
 
 backend_container_up=0
 if command -v docker >/dev/null 2>&1; then
-  if (cd "${ROOT_DIR}" && docker compose ps api --format json 2>/dev/null || true) | grep -q '"State":"running"'; then
+  state="$(cd "${ROOT_DIR}" && docker compose ps api --format '{{.State}}' 2>/dev/null || true)"
+  if [ "${state}" = "running" ]; then
     backend_container_up=1
   fi
 fi

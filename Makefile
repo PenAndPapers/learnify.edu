@@ -12,6 +12,11 @@
 
 PROJECT_NAME := learnify_edu
 
+COMPOSE_FILE ?= $(abspath $(CURDIR)/docker-compose.yml)
+COMPOSE_PROJECT_NAME ?= learnifyedu
+export COMPOSE_FILE
+export COMPOSE_PROJECT_NAME
+
 # ==============================================================================
 # Fastapi Docker Operations
 # ==============================================================================

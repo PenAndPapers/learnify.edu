@@ -9,6 +9,11 @@
 PROJECT_NAME := fastapi
 BACKEND_SERVICES := gateway api database cache mailpit
 
+COMPOSE_FILE ?= $(abspath $(CURDIR)/../../docker-compose.yml)
+COMPOSE_PROJECT_NAME ?= learnifyedu
+export COMPOSE_FILE
+export COMPOSE_PROJECT_NAME
+
 # ==============================================================================
 # Dependency Management Helpers (Private Targets)
 # ==============================================================================
