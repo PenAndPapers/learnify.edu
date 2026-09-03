@@ -4,6 +4,9 @@ PROJECT_NAME := learnify_edu
 
 # ==============================================================================
 # Fastapi Docker Operations
+# TODO:
+# - Add test (e2e, integration, unit, full test) command
+# - Add migration command for database schema changes
 # ==============================================================================
 
 backend-fastapi-install:
@@ -30,8 +33,14 @@ backend-fastapi-restart:
 backend-fastapi-build:
 	$(MAKE) -C backend/fastapi docker-build
 
+backend-fastapi-lint:
+	$(MAKE) -C backend/fastapi format
+	$(MAKE) -C backend/fastapi lint
+
 # ==============================================================================
 # Nuxt Operations
+# TODO:
+# - Add linting command for frontend code
 # ==============================================================================
 
 frontend-nuxt-install-deps:
@@ -58,9 +67,12 @@ frontend-nuxt-postinstall:
 
 # ==============================================================================
 # Fullstack Operations
+# TODO:
+# - Add linting command for frontend code
+# - add full test command for both backend and frontend code
 # ==============================================================================
 
-# Run this to boot up the backend containers and spin up the native Nuxt UI server simultaneously
+# Run this to boot up the backend containers and spin up the native Nuxt UI server simultaneously for local development
 fullstack-up:
 	@echo "🌐 Starting core backend infrastructure..."
 	$(MAKE) backend-fastapi-up
@@ -71,10 +83,9 @@ fullstack-up:
 fullstack-down:
 	$(MAKE) backend-fastapi-down
 
-
+# Run this to lint the backend code.
 fullstack-lint:
-	$(MAKE) -C backend/fastapi format
-	$(MAKE) -C backend/fastapi lint
+	$(MAKE) backend-fastapi-lint
 
 
 # ==============================================================================
