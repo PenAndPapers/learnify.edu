@@ -75,7 +75,7 @@ export default withNuxt(
         'error',
         { order: ['defineOptions', 'defineProps', 'defineEmits', 'defineSlots'] },
       ],
-      'vue/padding-line-between-tags': ['error', [{ blankLine: 'always', prev: '*', next: '*' }]],
+      'vue/padding-line-between-tags': 'off',
 
       'prettier/prettier': 'warn',
     },

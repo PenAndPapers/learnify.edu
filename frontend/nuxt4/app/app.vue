@@ -5,7 +5,6 @@ import Counter from '@/components/Counter.vue'
 <template>
   <div>
     <NuxtRouteAnnouncer />
-
     <NuxtWelcome />
 
     <Counter />
