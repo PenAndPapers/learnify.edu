@@ -106,16 +106,16 @@ docker-restart:
 # ==============================================================================
 
 test:
-	docker compose exec api pytest --no-cov
+	docker compose exec -T api pytest --no-cov
 
 test-unit:
-	docker compose exec api pytest --no-cov app/tests/unit
+	docker compose exec -T api pytest --no-cov app/tests/unit
 
 test-integration:
-	docker compose exec api pytest --no-cov app/tests/integration
+	docker compose exec -T api pytest --no-cov app/tests/integration
 
 test-e2e:
-	docker compose exec api pytest --no-cov app/tests/e2e
+	docker compose exec -T api pytest --no-cov app/tests/e2e
 
 # ==============================================================================
 # Code Quality, Formatting, and Linting (Ruff Core Engine Integration)
@@ -134,7 +134,7 @@ format:
 
 
 lint:
-	docker compose exec api ruff check --cache-dir /tmp/.ruff_cache app --exclude .venv 
+	docker compose exec -T api ruff check --cache-dir /tmp/.ruff_cache app --exclude .venv 
 
 
 # ==============================================================================
@@ -143,19 +143,19 @@ lint:
 
 migration:
 	@read -p "Enter migration descriptive name: " name; \
-	docker compose exec api alembic revision --autogenerate -m "$$name"
+	docker compose exec -T api alembic revision --autogenerate -m "$$name"
 
 migrate:
-	docker compose exec api alembic upgrade head
+	docker compose exec -T api alembic upgrade head
 
 migrate-down:
-	docker compose exec api alembic downgrade -1
+	docker compose exec -T api alembic downgrade -1
 
 migrate-logs:
-	docker compose exec api alembic history --verbose
+	docker compose exec -T api alembic history --verbose
 
 migrate-check:
-	docker compose exec api alembic current
+	docker compose exec -T api alembic current
 	@echo ""
 	@echo "--- Pending Relational Schema Migrations (Heads) ---"
-	docker compose exec api alembic heads
+	docker compose exec -T api alembic heads
