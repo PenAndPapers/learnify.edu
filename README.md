@@ -2,7 +2,7 @@
 
 Dockerized full-stack admissions & student-management platform.
 **Back-end:** Python 3.12 / FastAPI (sync stack) · SQLAlchemy 2.0 · Alembic · PostgreSQL 15 · Redis 7
-**Front-end:** Nuxt 4 · Vue 3 · TypeScript · pnpm
+**Front-end:** Nuxt 4 · Vue 3 · TypeScript · pnpm · Vitest · ESLint · Prettier
 **Infrastructure:** Nginx 1.25-alpine gateway (rate-limited reverse proxy) · Mailpit (dev-SMTP + Web UI)
 **Orchestration:** Docker Compose + root-level Makefile wrappers
 
@@ -142,8 +142,8 @@ All wrappers run from the **repository root**. There is no need to `cd` into sub
 | `make fullstack-down` | Backend stop only | Stops containers — the native Nuxt dev process runs in your shell; kill it with Ctrl+C. |
 | `make docker-clean-all` | Global cleanup | `compose down -v` + force removes any orphan `learnifyedu` containers, networks, and images. Aggressive. |
 | **Fullstack quality & tests** | | |
-| `make fullstack-lint` | Backend only | Currently runs `backend-fastapi-lint` only (Ruff check + format inside the api container). Frontend linting TODO per Makefile. |
-| `make fullstack-test` | Backend only | Currently runs `backend-fastapi-test` (full backend pytest suite inside the api container). Frontend tests TODO per Makefile. |
+| `make fullstack-lint` | Both (backend → frontend) | Runs backend Ruff lint/format first, then frontend ESLint + Prettier check via `frontend-nuxt-lint`. Fail-fast: aborts on whichever tier surfaces errors first. |
+| `make fullstack-test` | Both (backend → frontend, fail-fast) | Runs **backend first**: full pytest suite (unit + integration + e2e) inside the running `api` container (requires `make backend-fastapi-up` to be up beforehand — the in-terminal banner reminds you if the stack isn't live). If backend passes, then runs **frontend**: the full Vitest suite via `frontend-nuxt-test`. If any backend test fails, the frontend phase is skipped to surface infra-level issues quickly. |
 
 ### Backend code quality, tests, migrations
 
@@ -168,6 +168,7 @@ All commands below are available as root-level wrappers (preferred when working 
 
 | Command | What it does |
 |---|---|
+| **Install / build / run** | |
 | `make frontend-nuxt-install-deps` | `(cd frontend/nuxt4 && pnpm install)` — installs pinned Node dependencies. |
 | `make frontend-nuxt-update-deps` | `pnpm update --recursive --latest --interactive` — walks you through dependency updates. |
 | `make frontend-nuxt-dev` | `pnpm dev` — starts the native Nuxt 4 dev server (default http://localhost:3000). |
@@ -175,6 +176,14 @@ All commands below are available as root-level wrappers (preferred when working 
 | `make frontend-nuxt-generate` | `pnpm generate` — static pre-rendered output (if you ever want SSG output). |
 | `make frontend-nuxt-preview` | `pnpm preview` — previews a `.output/` build locally. |
 | `make frontend-nuxt-postinstall` | `pnpm postinstall` — run after install hooks; typically Nuxt auto-runs this. |
+| **Code quality gates** (ESLint 10 flat-config + Prettier 3 + @nuxt/eslint preset) | |
+| `make frontend-nuxt-lint` | `pnpm lint` — runs ESLint over `app/` and config files. Error exit on any rule violation. Warnings are emitted for Prettier style differences. |
+| `make frontend-nuxt-lint-fix` | `pnpm lint:fix` — auto-applies all ESLint rule fixes and Prettier rewrites. Use this before committing to avoid manual style diffs. |
+| `make frontend-nuxt-format` | `pnpm format` — runs Prettier `--write` over all tracked files. Fixes formatting without invoking ESLint rule logic. |
+| `make frontend-nuxt-format-check` | `pnpm format:check` — Prettier `--check` CI gate: errors on any unstyled file without writing. Use this in pipelines. |
+| `make frontend-nuxt-typecheck` | `pnpm typecheck` — runs `npx nuxi typecheck` to validate all Vue SFC `<script lang="ts">` blocks and TS sources against Nuxt's strict TS baseline. This is the recommended CI gate *in addition to* ESLint (catches type bugs ESLint's no-type-info parser can't). |
+| **Tests** (Vitest + @vue/test-utils + happy-dom) | |
+| `make frontend-nuxt-test` | `pnpm test` — runs Vitest once (`vitest run`) with all component/spec files. Coverage mode is `pnpm test:coverage` (invoked directly from `frontend/nuxt4/` with `--coverage`) when needed. |
 
 ---
 
@@ -202,7 +211,7 @@ Baseline expectations for every pull request or patch:
 
 2. **Run checks before you push.**
    - **Backend code:** Run `make backend-fastapi-lint` (Ruff: both `check --fix` + `format`) and `make backend-fastapi-test` (or at minimum the relevant subset via `make backend-fastapi-test-unit` / `-test-integration` / `-test-e2e`) while the stack is running. Root-level wrappers exist for all test and migration commands; use them when working from the repo root. If you add or alter a DB schema, run through the migration workflow (`make backend-fastapi-migration` → inspect generated revision → `make backend-fastapi-migrate` on a fresh volume) and commit both the model change and the Alembic version file together.
-   - **Frontend code:** Run the lint/test/build commands documented in the [Frontend README](./frontend/nuxt4/README.md). If no check command is documented yet, do **not** invent one in this README — add it to the frontend README and the frontend Makefile first.
+   - **Frontend code:** From the repo root run, in order, `make frontend-nuxt-format-check` (fails on unstyled files), `make frontend-nuxt-lint` (fails on ESLint rule violations), `make frontend-nuxt-typecheck` (strict TS across all Vue SFCs), and `make frontend-nuxt-test` (full Vitest suite). For a single one-shot local fix pass that auto-corrects style before re-running the gates, use `make frontend-nuxt-lint-fix` + `make frontend-nuxt-format` first. Each wrapper delegates to `frontend/nuxt4/Makefile` which in turn invokes the `pnpm` scripts defined in `frontend/nuxt4/package.json`.
    - Always run a smoke check of the "Confirm everything is healthy" URLs from §First 5 Minutes after making changes that touch gateway routing, Docker networking, or dependencies.
 
 3. **Where to put tests, migrations, and new files.**
