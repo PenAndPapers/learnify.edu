@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GIT_DIR="${ROOT_DIR}/.git"
 
+# Pin compose stack so hook-shell (non-TTY, non-login) sees the same
+# project/file regardless of env or a different CWD from the caller.
 export COMPOSE_FILE="${ROOT_DIR}/docker-compose.yml"
 export COMPOSE_PROJECT_NAME="learnifyedu"
 

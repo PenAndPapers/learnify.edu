@@ -9,6 +9,8 @@
 PROJECT_NAME := fastapi
 BACKEND_SERVICES := gateway api database cache mailpit
 
+# Pin compose file + project name so `make` from this service dir uses
+# the same root compose stack (and container prefix) as the root Makefile.
 COMPOSE_FILE ?= $(abspath $(CURDIR)/../../docker-compose.yml)
 COMPOSE_PROJECT_NAME ?= learnifyedu
 export COMPOSE_FILE

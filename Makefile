@@ -12,6 +12,8 @@
 
 PROJECT_NAME := learnify_edu
 
+# Pin compose file + project name so all wrappers resolve the same stack
+# regardless of caller CWD, stray compose.*.yml files, or env overrides.
 COMPOSE_FILE ?= $(abspath $(CURDIR)/docker-compose.yml)
 COMPOSE_PROJECT_NAME ?= learnifyedu
 export COMPOSE_FILE
