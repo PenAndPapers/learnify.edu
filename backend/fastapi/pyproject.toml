@@ -91,6 +91,7 @@ filterwarnings = [
 [tool.coverage.run]
 source = ["app"]
 omit = ["*/__init__.py", "app/core/config.py"]
+data_file = "/tmp/.coverage"
 
 [tool.coverage.report]
 show_missing = true

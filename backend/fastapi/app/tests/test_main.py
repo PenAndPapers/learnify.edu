@@ -16,13 +16,13 @@ def client():
 
 
 def test_index(client):
-  response = client.get("/")
+  response = client.get("/api/v1/system/")
   assert response.status_code == 200
   assert response.json() == {"message": "Fastapi web application"}
 
 
 def test_db_connection(client):
-  response = client.get("/check-database")
+  response = client.get("/api/v1/system/check-database")
   assert response.status_code == 200
   assert response.json() == {"message": "Database connection successful"}
 
@@ -32,14 +32,14 @@ def test_redis_connection(client, mocker):
   mocker.patch("app.main.app.state.redis.incr", new_callable=AsyncMock)
 
   # Redis naturally returns string values as bytes (e.g., b"1")
-  # Mock .get() as an AsyncMock that returns the expected bytes object
+  # The endpoint decodes bytes to str, so mock .get() to return bytes
   mock_get = mocker.patch(
     "app.main.app.state.redis.get",
     new_callable=AsyncMock,
     return_value=b"1",
   )
 
-  response = client.get("/check-redis")
+  response = client.get("/api/v1/system/check-redis")
 
   assert response.status_code == 200
   assert response.json() == {"hits": "1"}
@@ -48,6 +48,6 @@ def test_redis_connection(client, mocker):
 
 
 def test_health_check(client):
-  response = client.get("/check-health")
+  response = client.get("/api/v1/system/check-health")
   assert response.status_code == 200
   assert response.json() == {"status": "healthy"}

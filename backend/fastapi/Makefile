@@ -101,16 +101,16 @@ docker-restart:
 # ==============================================================================
 
 test:
-	docker compose exec api pytest
+	docker compose exec api pytest --no-cov
 
 test-unit:
-	docker compose exec api pytest app/tests/unit
+	docker compose exec api pytest --no-cov app/tests/unit
 
 test-integration:
-	docker compose exec api pytest app/tests/integration
+	docker compose exec api pytest --no-cov app/tests/integration
 
 test-e2e:
-	docker compose exec api pytest app/tests/e2e
+	docker compose exec api pytest --no-cov app/tests/e2e
 
 # ==============================================================================
 # Code Quality, Formatting, and Linting (Ruff Core Engine Integration)

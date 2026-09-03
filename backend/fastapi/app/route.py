@@ -50,7 +50,9 @@ def check_database(db: DatabaseDep) -> dict[str, str]:
 @router.get("/check-redis")
 async def check_redis(request: Request) -> dict[str, str]:
   await request.app.state.redis.incr("hits")
-  return {"hits": await request.app.state.redis.get("hits")}
+  raw = await request.app.state.redis.get("hits")
+  hits = raw.decode("utf-8") if isinstance(raw, bytes) else raw
+  return {"hits": hits}
 
 
 @router.get("/check-send-email")
