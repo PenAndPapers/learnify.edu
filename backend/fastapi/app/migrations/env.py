@@ -26,7 +26,7 @@ from app.modules.exam.table import (
   ExamTable,
 )
 from app.modules.student.table import StudentTable
-from app.modules.user.table import GuardianTable, UserTable
+from app.modules.user.table import ContactPersonTable, UserTable
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.

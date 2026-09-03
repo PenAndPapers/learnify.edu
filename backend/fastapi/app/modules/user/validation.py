@@ -18,7 +18,7 @@ class GenderEnum(StrEnum):
   OTHER = "OTHER"
 
 
-class GuardianTypeEnum(StrEnum):
+class ContactRelationEnum(StrEnum):
   FATHER = "FATHER"
   MOTHER = "MOTHER"
   HUSAND = "HUSAND"

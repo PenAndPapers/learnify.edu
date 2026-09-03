@@ -11,7 +11,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-from app.modules.user.validation import GuardianTypeEnum, PreferredContactEnum
+from app.modules.user.validation import ContactRelationEnum, PreferredContactEnum
 
 # revision identifiers, used by Alembic.
 revision: str = "691329bb2f8d"
@@ -22,7 +22,7 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
   """Upgrade schema."""
-  sa_guardian_type_enum = sa.Enum(GuardianTypeEnum, name="guardiantypeenum")
+  sa_contact_relation_enum = sa.Enum(ContactRelationEnum, name="guardiantypeenum")
   sa_preferred_contact_enum = sa.Enum(PreferredContactEnum, name="preferredcontactenum")
 
   op.create_table(
@@ -37,7 +37,7 @@ def upgrade() -> None:
     sa.Column("occupation", sa.String(), nullable=True),
     sa.Column(
       "relation_to_user",
-      type_=sa_guardian_type_enum,
+      type_=sa_contact_relation_enum,
       nullable=False,
     ),
     sa.Column(
@@ -91,5 +91,5 @@ def downgrade() -> None:
   sa_preferred_contact_enum = sa.Enum(PreferredContactEnum, name="preferredcontactenum")
   sa_preferred_contact_enum.drop(op.get_bind(), checkfirst=True)
 
-  sa_guardian_type_enum = sa.Enum(GuardianTypeEnum, name="guardiantypeenum")
-  sa_guardian_type_enum.drop(op.get_bind(), checkfirst=True)
+  sa_contact_relation_enum = sa.Enum(ContactRelationEnum, name="guardiantypeenum")
+  sa_contact_relation_enum.drop(op.get_bind(), checkfirst=True)
