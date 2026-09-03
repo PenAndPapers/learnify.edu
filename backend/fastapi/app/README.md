@@ -61,16 +61,16 @@ When an HTTP request hits the application, data flows deterministically through 
 ```mermaid
 flowchart TD
   request["Client Request"]
-  validation["`DTO Input Verification
-  validation.py`"]
-  controller["`Controller Entry
-  route.py`"]
-  service["`Business Domain Rules
-  service.py`"]
-  repository["`Database Abstraction
-  repository.py`"]
-  response["`Client Response
-  (route.py using validation.py schemas)`"]
+  validation["`**DTO Input Verification**
+  _validation.py_`"]
+  controller["`**Controller Entry**
+  _route.py_`"]
+  service["`**Business Domain Rules**
+  _service.py_`"]
+  repository["`**Database Abstraction**
+  _repository.py_`"]
+  response["`**Client Response**
+  (_route.py_ using _validation.py_ schemas)`"]
 
   request -- "1" --> validation
   validation -- "2" --> controller
@@ -80,6 +80,7 @@ flowchart TD
   service -- "6" --> controller
   controller -- "7" --> response
 ```
+
 ---
 
 ## 🚀 Architectural Benefits
