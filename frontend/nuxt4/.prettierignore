@@ -1,0 +1,16 @@
+node_modules
+.nuxt
+.output
+.data
+.nitro
+.cache
+dist
+coverage
+public
+pnpm-lock.yaml
+*.log
+*.png
+*.ico
+.DS_Store
+.env
+.env.*
