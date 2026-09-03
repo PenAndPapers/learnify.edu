@@ -4,7 +4,7 @@ This repository implements a production-ready, highly scalable architectural pat
 
 ---
 
-## 📁 Repository Directory Structure
+## 📁 Directory Structure
 
 ```text
 📁 app/
@@ -13,23 +13,19 @@ This repository implements a production-ready, highly scalable architectural pat
 ├── 📁 database/           # Engine setup and database session lifecycle management
 ├── 📁 helpers/            # Shared cross-cutting concerns (e.g., encryption, global security tokens)
 ├── 📁 migrations/         # Alembic database migration environment and version history
-├── 📁 utils/              # Generic utility features (e.g., mail clients, third-party integrations)
-├── 📁 tests/
-│   └── 📁 e2e/             # End-to-end tests (simulating user interactions)
-│   └── 📁 integration/     # Integration tests (connecting components with components)
-│   └── 📁 unit/            # Unit tests (individual components)
-│
 ├── 📁 modules/            # 📦 Package-by-Feature Domain Layer
 │   │ 
 │   └── 📁 feature/        # Self-contained domain module template
-│       │── 📄 route.py       # Controller Layer (HTTP Endpoints & Request Routing)
+│       │── 📄 dependency.py  # Dependency Injection Containers & Wiring
 │       │── 📄 exception.py   # Exception Handling Layer (Domain-specific Exceptions)
-│       │── 📄 service.py     # Business Logic / Domain Service Layer
 │       │── 📄 repository.py  # Data Access Layer (Repository Pattern)
+│       │── 📄 route.py       # Controller Layer (HTTP Endpoints & Request Routing)
+│       │── 📄 service.py     # Business Logic / Domain Service Layer
 │       │── 📄 table.py       # Database Entity Layer (SQLAlchemy ORM Models)
-│       │── 📄 validation.py  # Data Transfer Objects / DTOs (Pydantic Schemas)
-│       └── 📄 dependency.py  # Dependency Injection Containers & Wiring
+│       └── 📄 validation.py  # Data Transfer Objects / DTOs (Pydantic Schemas)
 │
+├── 📁 utils/              # Generic utility features (e.g., mail clients, third-party integrations)
+├── 📁 tests/              # Test suite for the application (e2e, integration, unit tests)
 ├── 📄 main.py                # Application bootstrap & FastAPI engine configuration
 └── 📄 route.py               # Global API router coordinating module-level entrypoints
 ```
@@ -60,7 +56,7 @@ When an HTTP request hits the application, data flows deterministically through 
 
 ```mermaid
 flowchart TD
-  request["Client Request"]
+  request["`**Client Request**`"]
   validation["`**DTO Input Verification**
   _validation.py_`"]
   controller["`**Controller Entry**
