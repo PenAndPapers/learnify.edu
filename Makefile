@@ -4,9 +4,6 @@ PROJECT_NAME := learnify_edu
 
 # ==============================================================================
 # Fastapi Docker Operations
-# TODO:
-# - Add test (e2e, integration, unit, full test) command
-# - Add migration command for database schema changes
 # ==============================================================================
 
 backend-fastapi-install:
@@ -36,6 +33,42 @@ backend-fastapi-build:
 backend-fastapi-lint:
 	$(MAKE) -C backend/fastapi format
 	$(MAKE) -C backend/fastapi lint
+
+# ==============================================================================
+# Fastapi Test Operations
+# ==============================================================================
+
+backend-fastapi-test:
+	$(MAKE) -C backend/fastapi test
+
+backend-fastapi-test-unit:
+	$(MAKE) -C backend/fastapi test-unit
+
+backend-fastapi-test-integration:
+	$(MAKE) -C backend/fastapi test-integration
+
+backend-fastapi-test-e2e:
+	$(MAKE) -C backend/fastapi test-e2e
+
+# ==============================================================================
+# Fastapi Migration Operations
+# ==============================================================================
+
+backend-fastapi-migration:
+	$(MAKE) -C backend/fastapi migration
+
+backend-fastapi-migrate:
+	$(MAKE) -C backend/fastapi migrate
+
+backend-fastapi-migrate-down:
+	$(MAKE) -C backend/fastapi migrate-down
+
+backend-fastapi-migrate-logs:
+	$(MAKE) -C backend/fastapi migrate-logs
+
+backend-fastapi-migrate-check:
+	$(MAKE) -C backend/fastapi migrate-check
+
 
 # ==============================================================================
 # Nuxt Operations
@@ -69,7 +102,7 @@ frontend-nuxt-postinstall:
 # Fullstack Operations
 # TODO:
 # - Add linting command for frontend code
-# - add full test command for both backend and frontend code
+# - add full test command for frontend code
 # ==============================================================================
 
 # Run this to boot up the backend containers and spin up the native Nuxt UI server simultaneously for local development
@@ -87,6 +120,9 @@ fullstack-down:
 fullstack-lint:
 	$(MAKE) backend-fastapi-lint
 
+# Run application full test
+fullstack-test:
+	$(MAKE) backend-fastapi-test
 
 # ==============================================================================
 # Docker Operations

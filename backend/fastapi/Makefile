@@ -104,13 +104,13 @@ test:
 	docker compose exec api pytest
 
 test-unit:
-	docker compose exec api pytest tests/unit
+	docker compose exec api pytest app/tests/unit
 
 test-integration:
-	docker compose exec api pytest tests/integration
+	docker compose exec api pytest app/tests/integration
 
 test-e2e:
-	docker compose exec api pytest tests/e2e
+	docker compose exec api pytest app/tests/e2e
 
 # ==============================================================================
 # Code Quality, Formatting, and Linting (Ruff Core Engine Integration)
