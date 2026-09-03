@@ -1,0 +1,137 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+GIT_DIR="${ROOT_DIR}/.git"
+
+print_banner() {
+  echo
+  echo "═══════════════════════════════════════════════════════════════"
+  echo "  🪝 Learnify.edu — pre-commit quality gate"
+  echo "═══════════════════════════════════════════════════════════════"
+}
+
+skip_reason=""
+if [ -f "${GIT_DIR}/MERGE_HEAD" ]; then
+  skip_reason="merge commit in progress"
+elif [ -f "${GIT_DIR}/CHERRY_PICK_HEAD" ]; then
+  skip_reason="cherry-pick in progress"
+elif [ -f "${GIT_DIR}/REBASE_HEAD" ] || [ -f "${GIT_DIR}/rebase-merge" ] || [ -f "${GIT_DIR}/rebase-apply" ]; then
+  skip_reason="rebase in progress"
+fi
+
+if [ -n "${skip_reason}" ]; then
+  print_banner
+  echo "  ⏭️  Skipping pre-commit hooks (${skip_reason})."
+  echo "═══════════════════════════════════════════════════════════════"
+  echo
+  exit 0
+fi
+
+print_banner
+
+frontend_failed=0
+echo
+echo "  🎨 Frontend — lint+format+typecheck auto-fix (pnpm full:fix)"
+echo "  ─────────────────────────────────────────────────────────────"
+
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "  ❌ pnpm not found on PATH."
+  echo "     Install pnpm or run 'make frontend-nuxt-install-deps' first."
+  echo
+  frontend_failed=1
+else
+  (cd "${ROOT_DIR}/frontend/nuxt4" && pnpm full:fix) || frontend_failed=1
+fi
+
+if [ "${frontend_failed}" -ne 0 ]; then
+  echo
+  echo "  ❌ Frontend full:fix did not complete cleanly."
+  echo "     Review errors above, fix them, then re-run 'git commit'."
+  echo
+  echo "  💡 Quick-fix helpers:"
+  echo "       make frontend-nuxt-lint-fix      # ESLint --fix only"
+  echo "       make frontend-nuxt-format        # Prettier --write only"
+  echo "       make frontend-nuxt-typecheck     # nuxi typecheck"
+  echo
+  echo "═══════════════════════════════════════════════════════════════"
+  exit 1
+fi
+
+frontend_fixed_files="$(cd "${ROOT_DIR}" && git diff --name-only --diff-filter=M -- frontend/nuxt4/ || true)"
+if [ -n "${frontend_fixed_files}" ]; then
+  echo
+  echo "  📝 The following frontend files were auto-fixed by the hook:"
+  echo "${frontend_fixed_files}" | while IFS= read -r f; do
+    echo "     - ${f}"
+  done
+  echo
+  echo "  ⚠️  Auto-fixed files were NOT staged. Please re-stage and"
+  echo "     commit them now so they are included alongside your"
+  echo "     manually-edited changes in this commit:"
+  echo
+  echo "     git add frontend/nuxt4/<file> ..."
+  echo "     git commit -m 'YOUR MESSAGE'"
+  echo
+  echo "═══════════════════════════════════════════════════════════════"
+  exit 1
+fi
+
+echo
+echo "  🚀 Backend — Ruff format+fix (only if api container is up)"
+echo "  ─────────────────────────────────────────────────────────────"
+
+backend_container_up=0
+if command -v docker >/dev/null 2>&1; then
+  if (cd "${ROOT_DIR}" && docker compose ps api --format json 2>/dev/null || true) | grep -q '"State":"running"'; then
+    backend_container_up=1
+  fi
+fi
+
+if [ "${backend_container_up}" -eq 1 ]; then
+  backend_failed=0
+  (cd "${ROOT_DIR}/backend/fastapi" && make format) || backend_failed=1
+
+  if [ "${backend_failed}" -ne 0 ]; then
+    echo
+    echo "  ❌ Backend format step returned an error."
+    echo "     Review Ruff output above, fix the issues, then re-run 'git commit'."
+    echo "     Tip: run 'make backend-fastapi-lint' from repo root to reproduce."
+    echo
+    echo "═══════════════════════════════════════════════════════════════"
+    exit 1
+  fi
+
+  backend_fixed_files="$(cd "${ROOT_DIR}" && git diff --name-only --diff-filter=M -- backend/fastapi/app/ || true)"
+  if [ -n "${backend_fixed_files}" ]; then
+    echo
+    echo "  📝 The following backend files were auto-fixed by the hook:"
+    echo "${backend_fixed_files}" | while IFS= read -r f; do
+      echo "     - ${f}"
+    done
+    echo
+    echo "  ⚠️  Auto-fixed files were NOT staged. Please re-stage and"
+    echo "     commit them now alongside your manually-edited changes:"
+    echo
+    echo "     git add backend/fastapi/app/<file> ..."
+    echo "     git commit -m 'YOUR MESSAGE'"
+    echo
+    echo "═══════════════════════════════════════════════════════════════"
+    exit 1
+  fi
+else
+  echo
+  echo "  ⚠️  'api' container is NOT running — SKIPPING backend Ruff format."
+  echo "     Backend lint+tests are enforced at 'git push' time, but it is"
+  echo "     recommended to boot the stack now so formatting issues are"
+  echo "     caught early:"
+  echo
+  echo "         make backend-fastapi-up"
+  echo
+fi
+
+echo
+echo "  ✅ pre-commit gate passed."
+echo "═══════════════════════════════════════════════════════════════"
+echo
+exit 0

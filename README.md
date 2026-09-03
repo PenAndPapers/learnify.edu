@@ -81,6 +81,23 @@ These steps give you a fully-running platform on a fresh clone. **Do this before
                                   # — only use this if you want a completely fresh database next boot.
    ```
 
+8. **Install the local Git hooks (required for all contributors):**
+
+   ```bash
+   make hooks-install
+   ```
+
+   This wires two local quality gates — they never run on CI/CD servers, only on your host:
+   - **`pre-commit`** (runs on every `git commit`): Auto-applies frontend `pnpm full:fix` (ESLint rule fixes + Prettier rewrites + Nuxt typecheck fixes) and blocks the commit if any step errors. If auto-fix changed files, you must re-stage them (`git add`) and recommit — the hook never stages changes for you (Git safety). Backend Ruff `check --fix` + `format` runs only if the `api` container is already up; if containers are down the backend step is skipped with a clear warning (backend lint/tests are hard-enforced at push-time instead, so you can't merge unformatted backend code).
+   - **`pre-push`** (runs on every `git push`, **fail-fast**): Full four-tier frontend gate (`format-check` → `lint` → `typecheck` → `vitest run`) followed by backend `ruff check` (no auto-fix at push-time) + the complete `pytest` suite inside the running `api` container. If the backend stack is not running at push-time you get a blocked push with actionable instructions: `make backend-fastapi-up` first, then retry.
+
+   Emergency bypass (never make this a habit):
+   ```bash
+   git commit --no-verify    # skip pre-commit
+   git push --no-verify      # skip pre-push
+   ```
+   The bypass is documented because Git supports it natively — but a push that failed pre-push hooks locally will still fail your CI pipeline (if one exists), so you are only deferring the failure, not avoiding it.
+
 ---
 
 ## 🧭 Repository Map
@@ -144,6 +161,9 @@ All wrappers run from the **repository root**. There is no need to `cd` into sub
 | **Fullstack quality & tests** | | |
 | `make fullstack-lint` | Both (backend → frontend) | Runs backend Ruff lint/format first, then frontend ESLint + Prettier check via `frontend-nuxt-lint`. Fail-fast: aborts on whichever tier surfaces errors first. |
 | `make fullstack-test` | Both (backend → frontend, fail-fast) | Runs **backend first**: full pytest suite (unit + integration + e2e) inside the running `api` container (requires `make backend-fastapi-up` to be up beforehand — the in-terminal banner reminds you if the stack isn't live). If backend passes, then runs **frontend**: the full Vitest suite via `frontend-nuxt-test`. If any backend test fails, the frontend phase is skipped to surface infra-level issues quickly. |
+| **Git hooks (local dev quality gates — install once per clone)** | | |
+| `make hooks-install` | Repo-wide (dev-local only) | Configures `git config core.hooksPath .githooks` + makes hook scripts executable. Wires two gates: `pre-commit` (frontend full:fix + backend format if api is up) and `pre-push` (full frontend 4-step gate + backend lint and tests with containers required). Required once per clone. See §First 5 Minutes step 8 for full behaviour and edge cases. |
+| `make hooks-uninstall` | Repo-wide | Reverts `core.hooksPath` back to Git's default `.git/hooks/` (effectively disables the local learnify.edu hooks — they remain in `.githooks/` on disk, ready to be re-enabled by running `hooks-install` again). |
 
 ### Backend code quality, tests, migrations
 
@@ -212,6 +232,7 @@ Baseline expectations for every pull request or patch:
 2. **Run checks before you push.**
    - **Backend code:** Run `make backend-fastapi-lint` (Ruff: both `check --fix` + `format`) and `make backend-fastapi-test` (or at minimum the relevant subset via `make backend-fastapi-test-unit` / `-test-integration` / `-test-e2e`) while the stack is running. Root-level wrappers exist for all test and migration commands; use them when working from the repo root. If you add or alter a DB schema, run through the migration workflow (`make backend-fastapi-migration` → inspect generated revision → `make backend-fastapi-migrate` on a fresh volume) and commit both the model change and the Alembic version file together.
    - **Frontend code:** From the repo root run, in order, `make frontend-nuxt-format-check` (fails on unstyled files), `make frontend-nuxt-lint` (fails on ESLint rule violations), `make frontend-nuxt-typecheck` (strict TS across all Vue SFCs), and `make frontend-nuxt-test` (full Vitest suite). For a single one-shot local fix pass that auto-corrects style before re-running the gates, use `make frontend-nuxt-lint-fix` + `make frontend-nuxt-format` first. Each wrapper delegates to `frontend/nuxt4/Makefile` which in turn invokes the `pnpm` scripts defined in `frontend/nuxt4/package.json`.
+   - These manual checks are also enforced automatically by the local git hooks installed via `make hooks-install` — see §First 5 Minutes step 8 for the exact split between commit-time (fast, auto-fixing) and push-time (fail-fast full suite) gates.
    - Always run a smoke check of the "Confirm everything is healthy" URLs from §First 5 Minutes after making changes that touch gateway routing, Docker networking, or dependencies.
 
 3. **Where to put tests, migrations, and new files.**

@@ -7,6 +7,7 @@
         frontend-nuxt-full-fix frontend-nuxt-test \
         frontend-nuxt-lint frontend-nuxt-lint-fix frontend-nuxt-format frontend-nuxt-format-check frontend-nuxt-typecheck \
         fullstack-up fullstack-down fullstack-lint fullstack-test \
+        hooks-install hooks-uninstall \
         docker-clean-all
 
 PROJECT_NAME := learnify_edu
@@ -159,6 +160,28 @@ fullstack-test:
 	@echo "  Frontend Nuxt 4 Vitest suite                                  "
 	@echo "═══════════════════════════════════════════════════════════════"
 	$(MAKE) frontend-nuxt-test
+
+# ==============================================================================
+# Git Hooks (Local Dev Quality Gates — Devs install once per clone)
+# ==============================================================================
+
+hooks-install:
+	git config core.hooksPath .githooks
+	chmod +x .githooks/pre-commit .githooks/pre-push
+	@echo
+	@echo "✅ Git hooks installed -> repository '.githooks/' directory."
+	@echo "   - pre-commit : frontend full:fix auto-apply (blocks on failure),"
+	@echo "                 backend format if api container is up (warns if down)."
+	@echo "   - pre-push   : frontend format-check + lint + typecheck + Vitest,"
+	@echo "                 backend lint + pytest (requires running containers)."
+	@echo "   Bypass (emergency only):  git commit|push --no-verify"
+	@echo
+
+hooks-uninstall:
+	git config --unset core.hooksPath || true
+	@echo
+	@echo "🧹 Git hooks uninstalled (core.hooksPath removed — reverted to default .git/hooks/)."
+	@echo
 
 # ==============================================================================
 # Docker Operations
