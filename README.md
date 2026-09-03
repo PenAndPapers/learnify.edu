@@ -52,12 +52,13 @@ These steps give you a fully-running platform on a fresh clone. **Do this before
 
    > **Backend-only mode (no frontend):** If you only need the backend + supporting services, run `make backend-fastapi-up` instead. This still starts the Nginx gateway.
 
-5. **(Optional) Explicit backend migration — host-side path only.** Skip this for normal containerized dev (auto-migrate already ran during step 4). Only run it if you completed step 2 (host-side venv setup) AND you have edited Alembic revision files manually or need to forcibly re-apply the head revision:
+5. **(Optional) Explicit backend migration.** Skip this for normal containerized dev (auto-migrate already ran during step 4). Only run it if you have edited Alembic revision files manually or need to forcibly re-apply the head revision:
 
    ```bash
-   # Migrations + test commands are currently backend-scoped only (root wrappers will be added later).
-   # Run from repo root with:
-   make -C backend/fastapi migrate
+   # Root wrapper available (preferred when working from the repo root).
+   # Alternative backend-scoped form still works when you're already cd'd
+   # inside backend/fastapi/: `make -C backend/fastapi migrate`.
+   make backend-fastapi-migrate
    ```
 
    This runs `docker compose exec api alembic upgrade head` against the running stack — it does NOT use the host-side Alembic CLI.
@@ -130,6 +131,7 @@ All wrappers run from the **repository root**. There is no need to `cd` into sub
 | **First-time host-side backend setup (optional — container-only dev does NOT need these)** | | |
 | `make backend-fastapi-install` | Backend only (host) | Host-side one-time bootstrapper: creates `backend/fastapi/app/migrations` dir, compiles locked `requirements.txt` from `pyproject.toml`, installs all packages into a new `backend/fastapi/.venv` via `uv`, bootstraps the Alembic env if empty. Requires `uv` installed on your host. |
 | `make backend-fastapi-update` | Backend only (host + containers) | Run **after** editing `backend/fastapi/pyproject.toml` (adding/upgrading Python deps). Re-compiles requirements.txt, re-syncs the host-side `.venv`, and triggers `make docker-build` to rebuild container images so they match the new dependency set. |
+| `make backend-fastapi-clean` | Backend only (host) | Destroys host-side backend Python tooling: deletes `backend/fastapi/uv.lock`, `requirements.txt`, and `.venv/`. Useful for a clean dependency re-bootstrap after `backend-fastapi-install` got wedged. Needs re-run of `backend-fastapi-install` + `backend-fastapi-update` afterward. |
 | **Container boot / stop / rebuild (default path)** | | |
 | `make backend-fastapi-up` | Backend + gateway only | Runs `docker compose --profile backend up -d gateway api database cache mailpit` via backend/Makefile delegation. Gateway always starts (explicit service names bypass its profile restriction). |
 | `make backend-fastapi-restart` | Backend only | `docker-down` then `docker-up` on all 5 BACKEND_SERVICES. |
@@ -139,27 +141,28 @@ All wrappers run from the **repository root**. There is no need to `cd` into sub
 | `make fullstack-up` | Both | Boot backend containers *then* launch native Nuxt 4 dev server on host (requires `make frontend-nuxt-install-deps` first). |
 | `make fullstack-down` | Backend stop only | Stops containers — the native Nuxt dev process runs in your shell; kill it with Ctrl+C. |
 | `make docker-clean-all` | Global cleanup | `compose down -v` + force removes any orphan `learnifyedu` containers, networks, and images. Aggressive. |
+| **Fullstack quality & tests** | | |
+| `make fullstack-lint` | Backend only | Currently runs `backend-fastapi-lint` only (Ruff check + format inside the api container). Frontend linting TODO per Makefile. |
+| `make fullstack-test` | Backend only | Currently runs `backend-fastapi-test` (full backend pytest suite inside the api container). Frontend tests TODO per Makefile. |
 
 ### Backend code quality, tests, migrations
 
-> ⚠️ **Migrations and test commands are currently backend-scoped only.** Root-level wrappers such as `make backend-fastapi-migrate` / `make backend-fastapi-test` / `make backend-fastapi-migration` do **not** exist yet and will be added later. Today, run these commands either from inside `backend/fastapi/` with `make <cmd>` or from the repo root with `make -C backend/fastapi <cmd>`. They all require the backend stack to already be running because they `docker compose exec` into the `api` container. When root wrappers are added, update this README in the same commit that adds the Makefile targets.
->
-> **Lint is the one exception:** `make backend-fastapi-lint` root wrapper already exists (documented below).
-
-These delegate to `backend/fastapi/Makefile` and all **require the backend stack to already be running**, because they execute commands *inside* the `api` container via `docker compose exec`.
+All commands below are available as root-level wrappers (preferred when working from the repo root). The backend-scoped `make -C backend/fastapi <name>` form continues to work identically when you're already cd'd inside `backend/fastapi/`. They all delegate to `backend/fastapi/Makefile` and **require the backend stack to already be running**, because they execute commands *inside* the `api` container via `docker compose exec`.
 
 | Command | What it does |
 |---|---|
 | `make backend-fastapi-lint` | Runs **both** `ruff check --fix` then `ruff format` inside the api container (backend/Makefile `format` target), then `ruff check` without fixes (the `lint` target). |
-| _(Run inside backend/fastapi dir, or via `docker compose exec api …`)_ | |
-| `make -C backend/fastapi test` | `pytest` full suite (unit + integration + e2e) inside the api container. |
-| `make -C backend/fastapi test-unit` | `pytest tests/unit` only (fast, mocks-heavy). |
-| `make -C backend/fastapi test-integration` | `pytest tests/integration` only. |
-| `make -C backend/fastapi test-e2e` | `pytest tests/e2e` only. |
-| `make -C backend/fastapi migrate` | `alembic upgrade head` inside the api container (note: the API container **already runs this on boot** — this target is for re-running after a manual migration edit, or to recover a DB to head). |
-| `make -C backend/fastapi migration` | Interactively prompts for a migration name, then runs `alembic revision --autogenerate -m "<name>"` inside the api container. Always review the generated file in `backend/fastapi/app/migrations/versions/` before committing — `--autogenerate` doesn't catch every schema change perfectly (e.g., Postgres ENUM alterations often need hand-tuning with idempotent `DO $$` blocks). |
-| `make -C backend/fastapi migrate-down` | `alembic downgrade -1` (rolls back one migration). |
-| `make -C backend/fastapi migrate-logs` | `alembic history --verbose` — migration timeline with full revision IDs. |
+| **Tests (pytest buckets)** | |
+| `make backend-fastapi-test` | `pytest` full suite (unit + integration + e2e) inside the api container. |
+| `make backend-fastapi-test-unit` | `pytest tests/unit` only (fast, mocks-heavy). |
+| `make backend-fastapi-test-integration` | `pytest tests/integration` only. |
+| `make backend-fastapi-test-e2e` | `pytest tests/e2e` only. |
+| **Migrations (Alembic)** | |
+| `make backend-fastapi-migrate` | `alembic upgrade head` inside the api container (note: the API container **already runs this on boot** — this target is for re-running after a manual migration edit, or to recover a DB to head). |
+| `make backend-fastapi-migration` | Interactively prompts for a migration name, then runs `alembic revision --autogenerate -m "<name>"` inside the api container. Always review the generated file in `backend/fastapi/app/migrations/versions/` before committing — `--autogenerate` doesn't catch every schema change perfectly (e.g., Postgres ENUM alterations often need hand-tuning with idempotent `DO $$` blocks). |
+| `make backend-fastapi-migrate-down` | `alembic downgrade -1` (rolls back one migration). |
+| `make backend-fastapi-migrate-logs` | `alembic history --verbose` — migration timeline with full revision IDs. |
+| `make backend-fastapi-migrate-check` | Prints the currently-applied Alembic revision alongside the revision head, so you can quickly see if there are unmigrated revisions without running `upgrade`. Useful in PRs and CI. |
 
 ### Frontend (native on host, no container yet)
 
@@ -198,7 +201,7 @@ Baseline expectations for every pull request or patch:
    - Drift between docs and code is a bug. Keep docs as current as source files.
 
 2. **Run checks before you push.**
-   - **Backend code:** Run `make backend-fastapi-lint` (Ruff: both `check --fix` + `format`) and `make -C backend/fastapi test` (or at minimum the relevant test subset — root-level `make backend-fastapi-test` wrappers do not exist yet, so use the `-C backend/fastapi` prefix) while the stack is running. If you add or alter a DB schema, run through the migration workflow (`make -C backend/fastapi migration` → inspect generated revision → `make -C backend/fastapi migrate` on a fresh volume) and commit both the model change and the Alembic version file together.
+   - **Backend code:** Run `make backend-fastapi-lint` (Ruff: both `check --fix` + `format`) and `make backend-fastapi-test` (or at minimum the relevant subset via `make backend-fastapi-test-unit` / `-test-integration` / `-test-e2e`) while the stack is running. Root-level wrappers exist for all test and migration commands; use them when working from the repo root. If you add or alter a DB schema, run through the migration workflow (`make backend-fastapi-migration` → inspect generated revision → `make backend-fastapi-migrate` on a fresh volume) and commit both the model change and the Alembic version file together.
    - **Frontend code:** Run the lint/test/build commands documented in the [Frontend README](./frontend/nuxt4/README.md). If no check command is documented yet, do **not** invent one in this README — add it to the frontend README and the frontend Makefile first.
    - Always run a smoke check of the "Confirm everything is healthy" URLs from §First 5 Minutes after making changes that touch gateway routing, Docker networking, or dependencies.
 
@@ -207,7 +210,7 @@ Baseline expectations for every pull request or patch:
      - `tests/unit/` — fast, mocks-heavy, no live DB/Redis needed. Use FastAPI `Depends()` overrides to inject fake repositories into services.
      - `tests/integration/` — exercises components together (typically service + real repository, with a test database session that rolls back).
      - `tests/e2e/` — simulates real user journeys against the full running stack (HTTP client against the gateway).
-   - Backend migrations (schema changes) live as Alembic revision files in `backend/fastapi/app/migrations/versions/`. Generate with `make -C backend/fastapi migration`, never hand-write revision IDs.
+   - Backend migrations (schema changes) live as Alembic revision files in `backend/fastapi/app/migrations/versions/`. Generate with `make backend-fastapi-migration` from the repo root (or `make migration` inside `backend/fastapi/`). Never hand-write revision IDs.
    - Frontend tests/components/composables/pages: follow the conventions already established inside `frontend/nuxt4/app/`.
 
 4. **Pull-request hygiene (kept deliberately lightweight — adapt if your team has a stricter formal policy).**
