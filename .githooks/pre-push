@@ -14,6 +14,7 @@ print_banner() {
   echo "═══════════════════════════════════════════════════════════════"
   echo "  🪝 Learnify.edu — pre-push quality gate (fail-fast)"
   echo "═══════════════════════════════════════════════════════════════"
+  echo
 }
 
 skip_reason=""
@@ -40,7 +41,8 @@ print_banner
 # ────────────────────────────────────────────────────────────────
 echo
 echo "  🎨 Frontend — Full quality gate (format → lint → typecheck → test)"
-echo "  ─────────────────────────────────────────────────────────────"
+echo
+echo "  ────────────────────────────────────────────────────────────────────"
 
 frontend_step_failed=""
 frontend_step_cmd=""
@@ -119,12 +121,15 @@ fi
 
 echo
 echo "  ✅ Frontend gate: all 4 steps passed."
+echo
+echo "═══════════════════════════════════════════════════════════════"
 
 # ────────────────────────────────────────────────────────────────
 # BACKEND — full quality gate (requires running api container)
 # ────────────────────────────────────────────────────────────────
 echo
 echo "  🚀 Backend — Full quality gate (lint → pytest)"
+echo
 echo "  ─────────────────────────────────────────────────────────────"
 
 backend_container_up=0
@@ -198,9 +203,11 @@ fi
 
 echo
 echo "  ✅ Backend gate: both steps passed."
-
 echo
-echo "  ✅✅✅ pre-push full quality gate PASSED. Allowing push."
+echo "═══════════════════════════════════════════════════════════════"
+echo
+echo "  🎉🎉 pre-push full quality gate PASSED. Allowing push. 🎉🎉"
+echo
 echo "═══════════════════════════════════════════════════════════════"
 echo
 exit 0
