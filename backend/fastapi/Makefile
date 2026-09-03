@@ -1,7 +1,7 @@
 # ==============================================================================
 # Workspace Management Core Configurations
 # ==============================================================================
-.PHONY: install update-deps _compile-deps _initialize-migration \
+.PHONY: install update-deps clean _compile-deps _initialize-migration \
         docker-build docker-up docker-down docker-down-v docker-restart \
         test test-unit test-integration test-e2e format lint \
         migration migrate migrate-down migrate-logs migrate-check

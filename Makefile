@@ -1,4 +1,13 @@
-.PHONY: backend-fastapi-install backend-fastapi-update backend-fastapi-up backend-fastapi-down
+.PHONY: \
+        backend-fastapi-install backend-fastapi-update backend-fastapi-clean \
+        backend-fastapi-up backend-fastapi-down backend-fastapi-down-v backend-fastapi-restart backend-fastapi-build backend-fastapi-lint \
+        backend-fastapi-test backend-fastapi-test-unit backend-fastapi-test-integration backend-fastapi-test-e2e \
+        backend-fastapi-migration backend-fastapi-migrate backend-fastapi-migrate-down backend-fastapi-migrate-logs backend-fastapi-migrate-check \
+        frontend-nuxt-install-deps frontend-nuxt-update-deps frontend-nuxt-build frontend-nuxt-dev frontend-nuxt-generate frontend-nuxt-preview frontend-nuxt-postinstall \
+        frontend-nuxt-full-fix frontend-nuxt-test \
+        frontend-nuxt-lint frontend-nuxt-lint-fix frontend-nuxt-format frontend-nuxt-format-check frontend-nuxt-typecheck \
+        fullstack-up fullstack-down fullstack-lint fullstack-test \
+        docker-clean-all
 
 PROJECT_NAME := learnify_edu
 
