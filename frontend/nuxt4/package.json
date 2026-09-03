@@ -15,7 +15,9 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "typecheck": "npx nuxi typecheck"
+    "typecheck": "npx nuxi typecheck",
+    "typecheck:fix": "npx nuxi typecheck --fixable",
+    "full:fix": "pnpm lint:fix && pnpm format && pnpm typecheck:fix"
   },
   "dependencies": {
     "nuxt": "4.5.2",

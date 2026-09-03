@@ -72,8 +72,6 @@ backend-fastapi-migrate-check:
 
 # ==============================================================================
 # Nuxt Operations
-# TODO:
-# - Add linting command for frontend code
 # ==============================================================================
 
 frontend-nuxt-install-deps:
@@ -97,12 +95,30 @@ frontend-nuxt-preview:
 frontend-nuxt-postinstall:
 	$(MAKE) -C frontend/nuxt4 postinstall
 
+frontend-nuxt-full-fix:
+	$(MAKE) -C frontend/nuxt4 full-fix
+
+frontend-nuxt-test:
+	$(MAKE) -C frontend/nuxt4 test
+
+frontend-nuxt-lint:
+	$(MAKE) -C frontend/nuxt4 lint
+
+frontend-nuxt-lint-fix:
+	$(MAKE) -C frontend/nuxt4 lint-fix
+
+frontend-nuxt-format:
+	$(MAKE) -C frontend/nuxt4 format
+
+frontend-nuxt-format-check:
+	$(MAKE) -C frontend/nuxt4 format-check
+
+frontend-nuxt-typecheck:
+	$(MAKE) -C frontend/nuxt4 typecheck
+
 
 # ==============================================================================
 # Fullstack Operations
-# TODO:
-# - Add linting command for frontend code
-# - add full test command for frontend code
 # ==============================================================================
 
 # Run this to boot up the backend containers and spin up the native Nuxt UI server simultaneously for local development
@@ -119,10 +135,21 @@ fullstack-down:
 # Run this to lint the backend code.
 fullstack-lint:
 	$(MAKE) backend-fastapi-lint
+	$(MAKE) frontend-nuxt-lint
 
-# Run application full test
+# Run application full test (backend first → fail-fast on infra)
 fullstack-test:
+	@echo
+	@echo "═══════════════════════════════════════════════════════════════"
+	@echo "  Backend FastAPI tests — gateway + api + database must be up  "
+	@echo "  (run 'make backend-fastapi-up' first if containers are down) "
+	@echo "═══════════════════════════════════════════════════════════════"
 	$(MAKE) backend-fastapi-test
+	@echo
+	@echo "═══════════════════════════════════════════════════════════════"
+	@echo "  Frontend Nuxt 4 Vitest suite                                  "
+	@echo "═══════════════════════════════════════════════════════════════"
+	$(MAKE) frontend-nuxt-test
 
 # ==============================================================================
 # Docker Operations
